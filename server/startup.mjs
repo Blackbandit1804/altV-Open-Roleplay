@@ -47,6 +47,7 @@ alt.on('ConnectionComplete', () => {
     import('./commands/roleplay.mjs');
     import('./commands/taxi.mjs');
     import('./commands/mechanic.mjs');
+    import('./commands/phone.mjs');
 
     // Systems
     import('./systems/anticheat.mjs');
@@ -56,6 +57,7 @@ alt.on('ConnectionComplete', () => {
     import('./systems/job.mjs');
     import('./systems/use.mjs');
     import('./systems/xp.mjs');
+    import('./systems/grid.mjs');
 
     // Import Item Effects
     import('./itemeffects/consume.mjs');
@@ -75,16 +77,5 @@ function cacheInformation() {
         }
 
         console.log(`=====> Cached: ${data.length} Accounts`);
-    });
-
-    // Used for quickly determing if a roleplay name is in use.
-    db.selectData('Character', ['name'], data => {
-        if (data === undefined) return;
-
-        for (let i = 0; i < data.length; i++) {
-            cache.cacheName(data[i].name);
-        }
-
-        console.log(`=====> Cached: ${data.length} Character Names`);
     });
 }

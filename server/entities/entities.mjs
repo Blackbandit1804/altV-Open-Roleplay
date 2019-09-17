@@ -35,6 +35,11 @@ export const Character = new orm.EntitySchema({
             nullable: true,
             default: null
         },
+        dob: {
+            type: 'date',
+            nullable: true,
+            default: null
+        },
         creation: {
             type: 'bigint',
             default: Date.now()
@@ -104,6 +109,10 @@ export const Character = new orm.EntitySchema({
                 smithing: { xp: 0 },
                 woodcutting: { xp: 0 }
             })
+        },
+        contacts: {
+            type: 'text',
+            default: '[]'
         }
     }
 });
