@@ -86,21 +86,21 @@ alt.on('job:LumberJack', player => {
             0,
             100
         );
-        obj.setFinishSound('complete');
+        obj.setFinishedSound('complete');
         obj.setRewards([
             { type: 'xp', prop: 'woodcutting', quantity: 20 },
             { type: 'item', prop: 'UnrefinedWood', quantity: 1 }
         ]);
         obj.setMaxProgress(10);
-        obj.setAnimation(
+        obj.setAnimationAndSound(
             'melee@large_wpn@streamed_core',
             'car_side_attack_a',
-            -1,
             1,
+            -1,
             'chop',
-            920
+            0.21
         );
-        obj.setParticle('core', 'ent_brk_wood_splinter', 50);
+        obj.setParticleEffect('core', 'ent_dst_wood_splinter', 50);
         job.add(copyObjective(obj));
     });
 

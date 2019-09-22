@@ -21,8 +21,7 @@ const trackPoints = [
     { x: 3004.7255859375, y: 2783.447021484375, z: 44.64783477783203 },
     { x: 2985.524169921875, y: 2817.20458984375, z: 45.981040954589844 },
     { x: 2975.896240234375, y: 2793.125244140625, z: 40.72920608520508 },
-    { x: 2969.200927734375, y: 2776.583251953125, z: 38.388397216796875 },
-    { x: -552.0471801757812, y: 5446.66552734375, z: 64.1369400024414 }
+    { x: 2969.200927734375, y: 2776.583251953125, z: 38.388397216796875 }
 ];
 
 const interactionPoint = { ...trackStart };
@@ -87,21 +86,21 @@ alt.on('job:MiningQuarry', player => {
             0,
             100
         );
-        obj.setFinishSound('complete');
+        obj.setFinishedSound('complete');
         obj.setRewards([
             { type: 'xp', prop: 'mining', quantity: 20 },
             { type: 'item', prop: 'UnrefinedRock', quantity: 1 }
         ]);
         obj.setMaxProgress(10);
-        obj.setAnimation(
+        obj.setAnimationAndSound(
             'melee@large_wpn@streamed_core',
             'ground_attack_on_spot',
-            -1,
             1,
+            -1,
             'dirt',
-            2000
+            0.35
         );
-        obj.setParticle('core', 'ent_col_rocks', 100, true);
+        obj.setParticleEffect('core', 'ent_col_rocks', 100, true);
         job.add(copyObjective(obj));
     });
 
