@@ -24,6 +24,8 @@ let playerSpeed = 0;
 let target;
 let targetBlip = false;
 let soundCooldown = Date.now();
+let projectileCooldown = Date.now();
+let props = [];
 
 const types = {
     0: point, // Go to Point
@@ -44,7 +46,9 @@ export const modifiers = {
     KILL_PLAYER: 64,
     REPAIR_PLAYER: 128,
     GOTO_PLAYER: 256,
-    MAX: 512
+    REMOVE_ITEM: 512,
+    CLEAR_PROPS: 1024,
+    MAX: 2048
 };
 
 const metaTypes = {
@@ -70,7 +74,6 @@ function setupObjective(value) {
     pause = true;
     objective = JSON.parse(value);
 
-    alt.log(`MODIFIER FLAGS: ${objective.flags}`);
     if (objective.blip) {
         if (objective.blip.pos.x + objective.blip.pos.y !== 0) {
             blip = new alt.PointBlip(
@@ -83,6 +86,24 @@ function setupObjective(value) {
             blip.color = objective.blip.color;
             blip.name = 'Objective';
         }
+    }
+
+    if (objective.forcedAnim) {
+        loadAnim(objective.forcedAnim.dict).then(res => {
+            native.taskPlayAnim(
+                alt.Player.local.scriptID,
+                objective.forcedAnim.dict,
+                objective.forcedAnim.name,
+                1,
+                -1,
+                -1,
+                objective.forcedAnim.flag,
+                1.0,
+                false,
+                false,
+                false
+            );
+        });
     }
 
     objectiveInfo = alt.setInterval(intervalObjectiveInfo, 0);
@@ -98,6 +119,11 @@ function clearObjective() {
     objective = undefined;
     clearScenario();
 
+    if (!alt.Player.local.vehicle) {
+        native.clearPedTasks(alt.Player.local.scriptID);
+        native.clearPedTasksImmediately(alt.Player.local.scriptID);
+    }
+
     if (objectiveInfo) {
         alt.clearInterval(objectiveInfo);
         objectiveInfo = undefined;
@@ -111,10 +137,6 @@ function clearObjective() {
     if (blip && !targetBlip) {
         blip.destroy();
         blip = undefined;
-    }
-
-    if (!alt.Player.local.vehicle) {
-        native.clearPedTasks(alt.Player.local.scriptID);
     }
 
     mashing = 0;
@@ -434,9 +456,13 @@ function playScenario() {
 }
 
 function clearScenario() {
-    if (alt.Player.local.soundInterval) {
-        alt.clearInterval(alt.Player.local.soundInterval);
-        alt.Player.local.soundInterval = undefined;
+    if (alt.Player.local.jobEffectInterval) {
+        alt.clearInterval(alt.Player.local.jobEffectInterval);
+        alt.Player.local.jobEffectInterval = undefined;
+    }
+
+    if (objective) {
+        if (objective.forcedAnim) return;
     }
 
     native.freezeEntityPosition(alt.Player.local.scriptID, false);
@@ -464,16 +490,8 @@ function playAnimation() {
             false
         );
 
-        alt.log(
-            native.getEntityAnimTotalTime(
-                alt.Player.local.scriptID,
-                objective.anim.dict,
-                objective.anim.name
-            )
-        );
-
-        if (objective.anim.sound && !alt.Player.local.soundInterval) {
-            alt.Player.local.soundInterval = alt.setInterval(() => {
+        if (!alt.Player.local.jobEffectInterval) {
+            alt.Player.local.jobEffectInterval = alt.setInterval(() => {
                 native.freezeEntityPosition(alt.Player.local.scriptID, true);
                 let time = native.getEntityAnimCurrentTime(
                     alt.Player.local.scriptID,
@@ -482,38 +500,38 @@ function playAnimation() {
                 );
 
                 time = time.toFixed(2) * 1;
-                if (
-                    time === objective.anim.animationHitTime &&
-                    Date.now() > soundCooldown
-                ) {
-                    soundCooldown = Date.now() + 100;
-                    playAudio(objective.anim.sound);
+                if (objective.anim.sounds) {
+                    objective.anim.sounds.forEach(sound => {
+                        if (!sound.time) return;
+                        if (time !== sound.time) return;
+                        if (!sound.name) return;
+                        if (Date.now() < soundCooldown) return;
+                        soundCooldown = Date.now() + 100;
+                        playAudio(sound.name);
+                    });
+                }
 
-                    if (objective.particle) {
-                        let forwardVector = native.getEntityForwardVector(
-                            alt.Player.local.scriptID
-                        );
-
-                        let pos = {
-                            x: alt.Player.local.pos.x + forwardVector.x * 1.1,
-                            y: alt.Player.local.pos.y + forwardVector.y * 1.1,
-                            z: alt.Player.local.pos.z
-                        };
-
-                        if (objective.particle.isGround) {
-                            pos.z -= 0.8;
-                        }
-
+                if (objective.particles) {
+                    objective.particles.forEach(particle => {
+                        if (!particle.dict) return;
+                        if (!particle.name) return;
+                        if (!particle.duration) return;
+                        if (!particle.scale) return;
+                        if (!particle.offset) return;
+                        if (!particle.time) return;
+                        if (time !== particle.time) return;
+                        if (Date.now() < projectileCooldown) return;
+                        projectileCooldown = Date.now() + 10;
                         playParticleFX(
-                            objective.particle.dict,
-                            objective.particle.name,
-                            objective.particle.duration,
-                            0.5,
-                            pos.x,
-                            pos.y,
-                            pos.z
+                            particle.dict,
+                            particle.name,
+                            particle.duration,
+                            particle.scale,
+                            particle.offset.x,
+                            particle.offset.y,
+                            particle.offset.z
                         );
-                    }
+                    });
                 }
             }, 3);
         }
@@ -584,3 +602,6 @@ function keyHelper(e) {
         alt.log(`Logged: ${animTime}`);
     }
 }
+
+// markanim weapons@projectile@ drop_underhand
+// 35

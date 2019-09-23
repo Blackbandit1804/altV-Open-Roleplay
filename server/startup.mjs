@@ -67,7 +67,9 @@ alt.on('ConnectionComplete', () => {
     import('./jobs/miningShaft.mjs');
     import('./jobs/playerTaxi.mjs');
     import('./jobs/playerMechanic.mjs');
+    import('./jobs/smithingRefinery.mjs');
     import('./jobs/woodcuttingLumber.mjs');
+    import('./jobs/woodcuttingRefinery.mjs');
 
     // Import Item Effects
     import('./itemeffects/consume.mjs');

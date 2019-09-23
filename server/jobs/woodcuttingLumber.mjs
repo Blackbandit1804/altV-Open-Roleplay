@@ -34,7 +34,7 @@ let interaction = new Interaction(
     3,
     'to begin cutting wood.'
 );
-interaction.addBlip(77, 2, jobName);
+interaction.addBlip(77, 6, jobName);
 
 alt.on('job:LumberJack', player => {
     let job = new Job(
@@ -97,10 +97,18 @@ alt.on('job:LumberJack', player => {
             'car_side_attack_a',
             1,
             -1,
-            'chop',
-            0.21
+            [{ name: 'chop', time: 0.21 }]
         );
-        obj.setParticleEffect('core', 'ent_dst_wood_splinter', 50);
+        obj.setParticleEffect([
+            {
+                dict: 'core',
+                name: 'ent_dst_wood_splinter',
+                duration: 25,
+                scale: 0.8,
+                offset: { x: 0, y: 1, z: 0 },
+                time: 0.2
+            }
+        ]);
         job.add(copyObjective(obj));
     });
 

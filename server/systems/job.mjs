@@ -28,7 +28,8 @@ export const modifiers = {
     REPAIR_PLAYER: 128,
     GOTO_PLAYER: 256,
     REMOVE_ITEM: 512,
-    MAX: 1024
+    CLEAR_PROPS: 1024,
+    MAX: 2048
 };
 
 export const restrictions = {
@@ -109,31 +110,42 @@ export class Objective {
      * @param flags number
      * @param duration numberInMS
      */
-    setAnimationAndSound(
-        dict,
-        name,
-        flag,
-        duration,
-        sound = undefined,
-        animationHitTime
-    ) {
+    setAnimationAndSound(dict, name, flag, duration, sounds = undefined) {
         this.anim = {
             dict,
             name,
             flag,
             duration,
-            sound,
-            animationHitTime
+            sounds
         };
     }
 
-    setParticleEffect(dict, name, duration, isGround = false) {
-        this.particle = {
+    /**
+     * Force an animation from start of objective; to next.
+     * @param dict
+     * @param name
+     * @param flag
+     */
+    setForcedAnim(dict, name, flag) {
+        this.forcedAnim = {
             dict,
             name,
-            duration,
-            isGround
+            flag,
+            duration: -1
         };
+    }
+
+    /**
+     * Requires Animiation to Work
+     * @param dict
+     * @param name
+     * @param duration
+     * @param scale
+     * @param offset Vector3
+     * @param time TimeInMS to Play Based on Animation Ticks
+     */
+    setParticleEffect(arrayOfParticles) {
+        this.particles = arrayOfParticles;
     }
 
     /**
@@ -160,6 +172,14 @@ export class Objective {
             b,
             a
         };
+    }
+
+    /**
+     * [{name: 'prop_fncwood_14a', bone: 57005, x: 0, y: 0, z: 0, pitch: 0, roll: 0, yaw: 0}]
+     * @param propsArray
+     */
+    setProps(propsArray) {
+        this.props = propsArray;
     }
 
     /**
@@ -201,8 +221,8 @@ export class Objective {
      * an objective. 10 is minimum.
      * @param amount
      */
-    setMaxProgress(amount = 10) {
-        if (amount <= 10) amount = 10;
+    setMaxProgress(amount = 5) {
+        if (amount <= 5) amount = 5;
         this.maxProgress = amount;
     }
 
@@ -235,32 +255,61 @@ export class Objective {
         // Item Removal Check
         if (isFlagged(this.flags, modifiers.REMOVE_ITEM) && this.removeItem) {
             let allValid = true;
-            let itemsToRemove = [];
-            for (let i = 0; i < this.removeItem.length; i++) {
-                let result = player.getItemQuantity(this.removeItem[i].label);
-                if (result.count < this.removeItem[i].quantity) {
+            const removeItemParams = this.removeItem;
+            let filteredItems = [];
+            for (let i = 0; i < removeItemParams.length; i++) {
+                let itemsFound = player.getItemsByLabel(removeItemParams[i].label);
+                if (itemsFound.length <= 0) {
                     if (!player.job.itemWarning) {
                         player.send(
-                            `You need ${this.removeItem[i].quantity} of the item ${this.removeItem[i].label}`
+                            `Missing ${removeItemParams[i].quantity}x ${removeItemParams[i].label}`
                         );
                     }
-
                     allValid = false;
                     continue;
-                } else {
-                    itemsToRemove = itemsToRemove.concat(result.items);
                 }
-            }
 
-            player.job.itemWarning = true;
+                // Stackable Type
+                if (itemsFound[0].quantity >= 2) {
+                    if (itemsFound[0].quantity < removeItemParams[i].quantity) {
+                        if (!player.job.itemWarning) {
+                            player.send(
+                                `Missing ${removeItemParams[i].quantity}x ${removeItemParams[i].label}`
+                            );
+                        }
+                        allValid = false;
+                        continue;
+                    }
+                } else {
+                    if (itemsFound.length < removeItemParams[i].quantity) {
+                        if (!player.job.itemWarning) {
+                            player.send(
+                                `Missing ${removeItemParams[i].quantity}x ${removeItemParams[i].label}`
+                            );
+                        }
+                        allValid = false;
+                        continue;
+                    }
+
+                    while (itemsFound.length > removeItemParams[i].quantity) {
+                        itemsFound.pop();
+                        if (itemsFound.length === removeItemParams[i].quantity) {
+                            break;
+                        }
+                    }
+                }
+
+                filteredItems = filteredItems.concat(itemsFound);
+            }
 
             if (!allValid) {
+                player.job.itemWarning = true;
                 return false;
-            } else {
-                itemsToRemove.forEach(item => {
-                    player.subItemByHash(item.hash, item.quantity);
-                });
             }
+
+            filteredItems.forEach(item => {
+                let res = player.subItemByHash(item.hash, item.quantity);
+            });
         }
 
         player.job.itemWarning = false;
@@ -355,6 +404,14 @@ export class Objective {
             }
         }
 
+        if (isFlagged(this.flags, modifiers.CLEAR_PROPS)) {
+            player.setSyncedMeta('job:Props', undefined);
+        }
+
+        if (this.props) {
+            player.setSyncedMeta('job:Props', this.props);
+        }
+
         // Go To Next Objective
         // Issue Rewards Here
         player.emitMeta('job:Objective', undefined);
@@ -384,12 +441,9 @@ export class Objective {
 
         // Checks if the player is in an job vehicle.
         if (isFlagged(this.flags, modifiers.IN_VEHICLE) && valid) {
-            console.log('Checking vehicle flag.');
             if (!player.vehicle) {
                 valid = false;
             } else {
-                console.log('Checking vehicles list.');
-
                 const vehicles = player.vehicles.filter(x => x.job !== undefined);
 
                 let isVehicleUsed = false;
@@ -629,8 +683,6 @@ export class Job {
         let allValid = true;
         for (let i = 0; i < this.items.length; i++) {
             if (this.items[i].hasItem) {
-                console.log(this.items[i]);
-
                 if (!player.hasItem(this.items[i].label)) {
                     allValid = false;
                     player.send('You are restricted from doing this job.');
@@ -887,8 +939,6 @@ export function quitJob(player, loggingOut = false, playFailSound = false) {
                 veh.destroy();
             });
         }
-
-        console.log(player.vehicles);
     }
 
     if (playFailSound) {
@@ -906,6 +956,7 @@ export function quitJob(player, loggingOut = false, playFailSound = false) {
 
     if (player.job) player.job = undefined;
     player.emitMeta('job:ClearObjective', true);
+    player.setSyncedMeta('job:Props', undefined);
 }
 
 export function copyObjective(original) {

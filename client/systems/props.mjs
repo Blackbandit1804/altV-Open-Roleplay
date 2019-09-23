@@ -8,6 +8,10 @@ alt.on('gameEntityCreate', entity => {
                 setupSlot(37, entity, entity.getSyncedMeta(`prop:37`));
             }, 250);
         }
+
+        if (entity.getSyncedMeta(`job:Props`)) {
+            handleJobProps(entity, entity.getSyncedMeta('job:props'));
+        }
     }
 });
 
@@ -19,10 +23,17 @@ alt.on('gameEntityDestroy', entity => {
                 native.deleteObject(previous);
             }
         }
+
+        handleJobProps(entity, undefined);
     }
 });
 
 alt.on('syncedMetaChange', (entity, key, value) => {
+    if (key === 'job:Props') {
+        handleJobProps(entity, value);
+        return;
+    }
+
     if (!key.includes('prop')) return;
     const [_, _slot] = key.split(':');
     setupSlot(parseInt(_slot), entity, value);
@@ -64,4 +75,81 @@ function setupSlot(propID, entity, value) {
         true
     );
     entity.setMeta(`prop:${propID}`, object);
+}
+
+alt.onServer('tryprop', (prop, bone, x, y, z, pitch, roll, yaw) => {
+    const object = native.createObject(
+        native.getHashKey(prop),
+        0,
+        0,
+        0,
+        true,
+        true,
+        true
+    );
+    native.attachEntityToEntity(
+        object,
+        alt.Player.local.scriptID,
+        native.getPedBoneIndex(alt.Player.local.scriptID, bone),
+        x,
+        y,
+        z,
+        pitch,
+        roll,
+        yaw,
+        true,
+        true,
+        false,
+        true,
+        1,
+        true
+    );
+
+    alt.setTimeout(() => {
+        native.deleteEntity(object);
+    }, 5000);
+});
+
+function handleJobProps(entity, props) {
+    if (!props) {
+        if (!entity.getMeta('job:Props')) return;
+
+        entity.getMeta('job:Props').forEach(prop => {
+            native.deleteEntity(prop);
+        });
+
+        entity.setMeta('job:Props', undefined);
+    } else {
+        const newProps = [];
+        props.forEach(prop => {
+            const object = native.createObject(
+                native.getHashKey(prop.name),
+                0,
+                0,
+                0,
+                true,
+                true,
+                true
+            );
+            native.attachEntityToEntity(
+                object,
+                alt.Player.local.scriptID,
+                native.getPedBoneIndex(alt.Player.local.scriptID, prop.bone),
+                prop.x,
+                prop.y,
+                prop.z,
+                prop.pitch,
+                prop.roll,
+                prop.yaw,
+                true,
+                true,
+                false,
+                true,
+                1,
+                true
+            );
+            newProps.push(object);
+        });
+        entity.setMeta('job:Props', newProps);
+    }
 }
