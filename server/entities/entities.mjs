@@ -36,8 +36,8 @@ export const Character = new orm.EntitySchema({
             default: null
         },
         dob: {
-            type: 'bigint',
-            default: Date.now()
+            type: 'text',
+            default: `${Date.now()}`
         },
         creation: {
             type: 'bigint',
@@ -67,6 +67,10 @@ export const Character = new orm.EntitySchema({
         inventory: {
             type: 'text',
             default: `${JSON.stringify(new Array(128).fill(null))}`
+        },
+        equipment: {
+            type: 'text',
+            default: `${JSON.stringify(new Array(15).fill(null))}`
         },
         lastposition: {
             type: 'text',
