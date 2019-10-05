@@ -286,6 +286,18 @@ export const BaseItems = {
             stack: true
         },
         slot: -1
+    },
+    license: {
+        eventcall: 'itemeffects:ShowLicense',
+        abilities: {
+            drop: false,
+            use: true,
+            destroy: true,
+            sell: false,
+            rename: false,
+            stack: false
+        },
+        slot: -1
     }
 };
 
@@ -302,9 +314,21 @@ export const Items = {
         name: 'Granola Bar',
         base: 'food',
         key: 'granolabar',
-        props: {},
+        props: {
+            health: 2
+        },
         quantity: 0,
         icon: 'chocolate-bar'
+    },
+    soda: {
+        name: 'Soda',
+        base: 'food',
+        key: 'soda',
+        props: {
+            health: 2
+        },
+        quantity: 0,
+        icon: 'soda'
     },
     hat: {
         name: 'Hat',
@@ -441,6 +465,14 @@ export const Items = {
         props: {},
         quantity: 0,
         icon: 'metal'
+    },
+    unrefinedkevlarium: {
+        name: 'Unrefined Kevlarium',
+        base: 'unrefined',
+        key: 'unrefinedkevlarium',
+        props: {},
+        quantity: 0,
+        icon: 'leaves'
     },
     pickaxe1: {
         name: 'Rusty Pickaxe',
@@ -587,5 +619,13 @@ export const Items = {
         },
         quantity: 0,
         icon: 'outfit'
+    },
+    driverslicense: {
+        name: 'Drivers License',
+        base: 'license',
+        key: 'driverslicense',
+        props: {},
+        quantity: 0,
+        icon: 'id-card'
     }
 };

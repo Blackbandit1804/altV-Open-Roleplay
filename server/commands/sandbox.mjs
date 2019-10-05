@@ -1,6 +1,7 @@
 import * as alt from 'alt';
 import * as chat from '../chat/chat.mjs';
 import * as configurationItems from '../configuration/items.mjs';
+import fs from 'fs';
 import { addWeapon } from '../systems/inventory.mjs';
 import { addXP, setXP } from '../systems/skills.mjs';
 
@@ -132,6 +133,7 @@ chat.registerCmd('tpto', (player, arg) => {
 
 chat.registerCmd('players', player => {
     alt.Player.all.forEach(t => {
+        if (!t.data) return;
         player.send(`${t.data.name}`);
     });
 });
@@ -219,4 +221,19 @@ chat.registerCmd('tryprop', (player, args) => {
     }
 
     alt.emitClient(player, 'tryprop', _prop, _bone, _x, _y, _z, _pitch, _roll, _yaw);
+});
+
+let trackPoints = [];
+
+chat.registerCmd('track', (player, args) => {
+    trackPoints.push(player.pos);
+});
+
+chat.registerCmd('trackclear', () => {
+    trackPoints = [];
+});
+
+chat.registerCmd('trackdone', () => {
+    fs.writeFileSync(`trackpoints.json`, JSON.stringify(trackPoints, null, '\t'));
+    trackPoints = [];
 });

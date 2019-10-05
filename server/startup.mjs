@@ -21,8 +21,6 @@ let db = new SQL(
 // This is required so we don't use the Database functionality too early.
 // Please keep that in mind if you plan on expanding this framework.
 alt.on('ConnectionComplete', () => {
-    import('./configuration/job.mjs');
-
     // Standard Events
     import('./events/playerConnect.mjs');
     import('./events/playerDisconnect.mjs');
@@ -32,6 +30,8 @@ alt.on('ConnectionComplete', () => {
     import('./events/entityLeaveColshape.mjs');
     import('./events/playerLeftVehicle.mjs');
     import('./events/playerEnteredVehicle.mjs');
+    import('./events/explosion.mjs');
+    import('./events/weaponDamage.mjs');
 
     // Custom Client Events / Custom Server Events
     import('./clientEvents/events.mjs');
@@ -64,6 +64,10 @@ alt.on('ConnectionComplete', () => {
     import('./jobs/agilityTrack.mjs');
     import('./jobs/agilityWorkout.mjs');
     import('./jobs/agilityMtnBike1.mjs');
+    import('./jobs/agilityMtnBike2.mjs');
+    import('./jobs/agilityDirtbike.mjs');
+    import('./jobs/agilityWaterScooter.mjs');
+    import('./jobs/gatheringKevlarium1.mjs');
     import('./jobs/miningQuarry.mjs');
     import('./jobs/miningShaft.mjs');
     import('./jobs/playerTaxi.mjs');
@@ -71,6 +75,7 @@ alt.on('ConnectionComplete', () => {
     import('./jobs/smithingRefinery.mjs');
     import('./jobs/woodcuttingLumber.mjs');
     import('./jobs/woodcuttingRefinery.mjs');
+    import('./jobs/drivingSchool.mjs');
 
     // Import Item Effects
     import('./itemeffects/consume.mjs');
