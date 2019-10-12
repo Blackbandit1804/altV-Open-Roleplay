@@ -4,6 +4,7 @@ import { Dictionary } from '../configuration/dictionary.mjs';
 import { distance, randPosAround } from '../utility/vector.mjs';
 import { addXP } from '../systems/skills.mjs';
 import { Items, BaseItems } from '../configuration/items.mjs';
+import { generateHash } from '../utility/encryption.mjs';
 
 const Debug = true;
 
@@ -15,7 +16,8 @@ export const objectives = {
     PLAYER: 4, // Player Type
     ORDER: 5, // Press Keys in Order
     INFINITE: 6, // Repeat any objectives after this.
-    WAIT: 7
+    WAIT: 7,
+    MINIGAME: 8
 };
 
 export const modifiers = {
@@ -134,6 +136,15 @@ export class Objective {
             duration,
             sounds
         };
+    }
+
+    /**
+     * Set a minigame for the minigame type.
+     * @param minigameName
+     */
+    setMiniGame(minigameName) {
+        this.minigame = minigameName;
+        this.minigamehash = generateHash(this);
     }
 
     /**
@@ -435,7 +446,7 @@ export class Objective {
      * @param player
      * @param args
      */
-    checkObjective(player, args) {
+    checkObjective(player, hash) {
         // Normal range check.
         // Then do a targed range check
         // if the objective type is 4.
@@ -446,6 +457,7 @@ export class Objective {
         if (!this.checkHold(player)) return false;
         if (!this.checkMash(player)) return false;
         if (!this.checkWait(player)) return false;
+        if (!this.checkMinigame(player, hash)) return false;
 
         // Check the player objective type
         // When the user has a 'target' type.
@@ -537,6 +549,14 @@ export class Objective {
         if (this.modifiedWaitTime > Date.now()) return false;
         return true;
     }
+
+    checkMinigame(player, hash) {
+        if (this.type !== objectives.MINIGAME) return true;
+        if (this.minigamehash !== hash[0]) {
+            return false;
+        }
+        return true;
+    }
 }
 
 const isInRange = (player, objective) => {
@@ -619,20 +639,11 @@ export class Job {
         this.objectives = [];
         this.restrictions = restrictions;
         this.items = [];
+        this.levelRestrictions = [];
         this.timelimit = 60000;
+        this.enabledTimer = false;
         player.hasDied = false;
         player.job = this;
-    }
-
-    /**
-     * Clear the job
-     * @param player
-     */
-    clear(player) {
-        let currentJob = player.getMeta('job');
-        if (currentJob) {
-            // Clear the Job Here
-        }
     }
 
     /**
@@ -646,14 +657,22 @@ export class Job {
             return;
         }
 
-        this.addUniform(player);
+        checkRestrictions(player);
+        this.checkLevelRestrictions(player);
 
+        if (!player.job) return;
+
+        this.addUniform(player);
         this.start = Date.now();
         player.emitMeta('job:Objective', JSON.stringify(this.objectives[0]));
         player.job.available = false;
 
         if (isFlagged(this.restrictions, restrictions.TIME_LIMIT)) {
             this.end = this.start + this.timelimit;
+        }
+
+        if (this.enabledTimer) {
+            player.send('Clock is ticking.. Go Go Go!');
         }
     }
 
@@ -697,7 +716,23 @@ export class Job {
         return allValid;
     }
 
-    checkItemRestriction(player, hasItem) {}
+    checkLevelRestrictions(player) {
+        if (!this.arrayOfLevels) return;
+        const skills = JSON.parse(player.data.skills);
+        let valid = true;
+        this.arrayOfLevels.forEach(restriction => {
+            if (!valid) return;
+            if (!restriction.skill) return;
+            if (skills[restriction.skill.toLowerCase()].xp < restriction.xp) {
+                valid = false;
+                quitJob(player, false, true);
+                player.send(
+                    `You do not have a high enough ${restriction.skill} for this job.`
+                );
+                return;
+            }
+        });
+    }
 
     /**
      * Set a time limit for the entire job.
@@ -713,6 +748,22 @@ export class Job {
      */
     setItemRestrictions(arrayOfItems) {
         this.items = arrayOfItems;
+    }
+
+    /**
+     * [{ skill: 'notoriety', xp: '50000' }]
+     * @param arrayOfLevels
+     */
+    setLevelRestrictions(arrayOfLevels) {
+        this.arrayOfLevels = arrayOfLevels;
+    }
+
+    /**
+     * Enables elapsed timer
+     * Displays time at completion of job
+     */
+    setElapsedTimer() {
+        this.enabledTimer = true;
     }
 
     /**
@@ -765,13 +816,26 @@ export class Job {
                 this.clearTarget(player);
             }
         } else {
-            player.emitMeta('job:Objective', undefined);
-            player.send('Job Complete');
-            quitJob(player);
+            this.completeJob(player);
             return;
         }
 
         player.emitMeta('job:Objective', JSON.stringify(this.objectives[0]));
+    }
+
+    /**
+     * Completes the current job.
+     * @param player
+     */
+    completeJob(player) {
+        player.emitMeta('job:Objective', undefined);
+        player.send('Job Complete!');
+        if (this.enabledTimer) {
+            let end = Date.now();
+            let elapsed_time = parseFloat((end - this.start) / 1000).toFixed(1);
+            player.send(`Elapsed Time: ${elapsed_time} seconds`);
+        }
+        quitJob(player);
     }
 
     /**
@@ -792,8 +856,7 @@ export class Job {
         }
 
         if (this.objectives[0] === undefined) {
-            player.emitMeta('job:Objective', undefined);
-            player.send('Job Complete');
+            this.completeJob(player);
             return;
         }
 
@@ -805,11 +868,11 @@ export class Job {
      * @param player
      * @param args
      */
-    check(player, ...args) {
+    check(player, hash) {
         if (player.checking) return;
         player.checking = true;
 
-        if (!this.objectives[0].attemptObjective(player, ...args)) {
+        if (!this.objectives[0].attemptObjective(player, hash)) {
             player.checking = false;
             return;
         }
@@ -846,9 +909,9 @@ export class Job {
     }
 }
 
-export function check(player) {
+export function check(player, hash) {
     if (!player.job) return;
-    player.job.check(player);
+    player.job.check(player, hash);
 }
 
 export function skipToBeginning(player) {

@@ -6,7 +6,10 @@ import * as alt from 'alt';
 // tossed into these arrays or objects.
 
 // username, encrypted password
+
 const accounts = {};
+let details = {};
+let vehicleID;
 
 export function cacheAccount(username, id, password) {
     accounts[username] = {
@@ -18,4 +21,14 @@ export function cacheAccount(username, id, password) {
 export function getAccount(username) {
     let dat = accounts[username];
     return dat;
+}
+
+export function setVehicleID(lastVehicleID) {
+    vehicleID = lastVehicleID + 1;
+    console.log(`Next vehicle ID is set to ${vehicleID}`);
+}
+
+export function fetchNextVehicleID() {
+    vehicleID += 1;
+    return vehicleID;
 }

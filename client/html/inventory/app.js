@@ -21,6 +21,7 @@ const icons = [
     'chocolate-bar',
     'coffee-cup',
     'cooking',
+    'cuffs',
     'crafting',
     'earring',
     'farming',
@@ -34,6 +35,7 @@ const icons = [
     'hat',
     'id-card',
     'inventory',
+    'leaf',
     'mechanic',
     'medicine',
     'metal',
@@ -43,14 +45,18 @@ const icons = [
     'outfit',
     'phone',
     'pickaxe',
+    'pills',
     'planks',
     'profile',
     'rock',
+    'rope',
+    'seeds',
     'settings',
     'shirt',
     'smithing',
     'soda-can',
     'stats',
+    'syringe',
     'trousers',
     'unknown',
     'watch',
@@ -202,7 +208,7 @@ class Inventory extends Component {
                 name: 'Taco',
                 base: 'Food',
                 hash: '90840921921',
-                icon: 'fish'
+                icon: 'leaf'
             };
             items[1] = {
                 name: 'Fish Taco That Is Super Delicious',

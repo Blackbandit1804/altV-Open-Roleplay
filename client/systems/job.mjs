@@ -5,6 +5,7 @@ import { drawMarker } from '/client/utility/marker.mjs';
 import { playAudio } from '/client/systems/sound.mjs';
 import { playParticleFX } from '/client/utility/particle.mjs';
 import { drawText3d } from '/client/utility/text.mjs';
+import { View } from '../utility/view.mjs';
 
 alt.log('Loaded: client->systems->job.mjs');
 
@@ -27,6 +28,7 @@ let target;
 let targetBlip = false;
 let soundCooldown = Date.now();
 let projectileCooldown = Date.now();
+let minigameView;
 
 const types = {
     0: point, // Go to Point
@@ -35,7 +37,8 @@ const types = {
     3: mash, // Mash 'E'
     4: player, // Target
     5: order, // Press Keys in Order
-    7: wait
+    7: wait,
+    8: minigame
 };
 
 export const modifiers = {
@@ -177,6 +180,14 @@ function clearObjective() {
         blip = undefined;
     }
 
+    if (alt.Player.local.getMeta('viewOpen')) {
+        if (minigameView) {
+            minigameView.close();
+        }
+    }
+
+    alt.emit('hud:SetMinigameText', '');
+
     mashing = 0;
     pause = false;
 }
@@ -248,19 +259,7 @@ function intervalObjectiveInfo() {
     if (objective.word && objective.word.length >= 1 && objective.marker) {
         native.disableAllControlActions(0);
         native.disableAllControlActions(1);
-        drawText3d(
-            objective.word.join(''),
-            objective.marker.pos.x,
-            objective.marker.pos.y,
-            objective.marker.pos.z + 1,
-            0.5,
-            4,
-            255,
-            255,
-            255,
-            255,
-            true
-        );
+        alt.emit('hud:SetMinigameText', objective.word);
     }
 
     if (objective && objective.helpText && !target) {
@@ -375,6 +374,12 @@ function intervalObjectiveChecking() {
     alt.emitServer('job:Check');
 }
 
+function completeMiniGame(hash) {
+    if (!minigameView) return;
+    minigameView.close();
+    alt.emitServer('job:Check', `${hash}`);
+}
+
 function preObjectiveCheck() {
     let valid = true;
 
@@ -485,6 +490,33 @@ function order() {
     return false;
 }
 
+function minigame() {
+    if (playerSpeed >= 5 && !alt.Player.local.inScenario) {
+        clearScenario();
+        return false;
+    }
+
+    if (!minigameView) {
+        minigameView = new View();
+    } else {
+        if (alt.Player.local.getMeta('viewOpen')) return;
+        minigameView.open('http://resource/client/html/pixigames/index.html', true);
+        minigameView.on('minigame:Complete', completeMiniGame);
+        minigameView.on('minigame:Ready', () => {
+            alt.log('Game View Ready!');
+            alt.log(objective.minigame);
+            minigameView.emit(`minigame:${objective.minigame}`, objective.minigamehash);
+            alt.setTimeout(() => {
+                playAnimation();
+            }, 2000);
+        });
+        minigameView.on('minigame:Quit', () => {
+            alt.emitServer('job:Quit', false, true);
+            minigameView.close();
+        });
+    }
+}
+
 /**
  * Check if the target has been set.
  * Then check the modifiers that
@@ -550,6 +582,7 @@ function clearScenario() {
 }
 
 function playAnimation() {
+    if (!objective) return;
     if (!objective.anim) return;
     alt.Player.local.inAnimation = true;
     loadAnim(objective.anim.dict).then(res => {
@@ -708,32 +741,19 @@ alt.onServer('job:isInWater', callbackName => {
         z: pPos.z
     };
 
-    const [_, height] = native.testVerticalProbeAgainstAllWater(
-        pos.x,
-        pos.y,
-        pos.z,
-        undefined,
-        undefined
-    );
-
-    if (height === 0) {
-        alt.emitServer(callbackName, callbackName, false);
-        return;
-    }
-
     const hash = native.getHashKey('a_c_fish');
     native.requestModel(hash);
-    alt.nextTick(() => {
-        const entity = native.createPed(1, hash, pos.x, pos.y, pos.z, 0, false, false);
-        native.setEntityAlpha(entity, 0, true);
 
-        alt.setTimeout(() => {
-            alt.nextTick(() => {
-                const inWater = native.isEntityInWater(entity);
-                pos.z = height;
-                alt.emitServer(callbackName, callbackName, inWater, pos);
-                native.deleteEntity(entity);
-            });
-        }, 3500);
-    });
+    const height = native.getWaterHeight(pos.x, pos.y, pos.z, undefined);
+    const entity = native.createPed(1, hash, pos.x, pos.y, pos.z, 0, false, false);
+    native.setEntityAlpha(entity, 0, true);
+
+    alt.setTimeout(() => {
+        alt.nextTick(() => {
+            const inWater = native.isEntityInWater(entity);
+            pos.z = height;
+            alt.emitServer(callbackName, callbackName, inWater, pos);
+            native.deleteEntity(entity);
+        });
+    }, 3500);
 });

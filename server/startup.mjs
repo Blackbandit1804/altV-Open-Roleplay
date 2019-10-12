@@ -1,9 +1,9 @@
 import * as alt from 'alt';
 //import * as chat from 'chat';
 import SQL from '../../postgres-wrapper/database.mjs'; // Database
-import { Account, Character, Vehicle } from './entities/entities.mjs'; // Schemas for Database
+import { Account, Character, Vehicle, Details } from './entities/entities.mjs'; // Schemas for Database
 import * as configurationDatabase from './configuration/database.mjs'; // Database Configuration
-import * as cache from './cache/cache.mjs';
+import { cacheAccount, setVehicleID } from './cache/cache.mjs';
 
 // Setup Main Entities and Database Connection
 let db = new SQL(
@@ -14,7 +14,7 @@ let db = new SQL(
     configurationDatabase.DatabaseInfo.password,
     configurationDatabase.DatabaseInfo.dbname,
     // Specify New Table Schemas Here
-    [Account, Character, Vehicle]
+    [Account, Character, Vehicle, Details]
 );
 
 // After Database Connection is complete. Load the rest of the modules.
@@ -66,13 +66,17 @@ alt.on('ConnectionComplete', () => {
     import('./jobs/agilityMtnBike1.mjs');
     import('./jobs/agilityMtnBike2.mjs');
     import('./jobs/agilityDirtbike.mjs');
+    import('./jobs/agilityDirtbike2.mjs');
     import('./jobs/agilityWaterScooter.mjs');
     import('./jobs/agilityDirtBuggy.mjs');
     import('./jobs/gatheringKevlarium1.mjs');
+    import('./jobs/gatheringVigorium1.mjs');
     import('./jobs/miningQuarry.mjs');
     import('./jobs/miningShaft.mjs');
     import('./jobs/playerTaxi.mjs');
     import('./jobs/playerMechanic.mjs');
+    import('./jobs/refineKevlarium.mjs');
+    import('./jobs/refineVigorium.mjs');
     import('./jobs/smithingRefinery.mjs');
     import('./jobs/woodcuttingLumber.mjs');
     import('./jobs/woodcuttingRefinery.mjs');
@@ -88,12 +92,20 @@ alt.on('ConnectionComplete', () => {
 
 // Used to speed up the server dramatically.
 function cacheInformation() {
+    db.fetchLastId('Vehicle', res => {
+        if (!res) {
+            setVehicleID(0);
+        } else {
+            setVehicleID(res.id);
+        }
+    });
+
     // Passwords are encrypted.
     db.selectData('Account', ['id', 'username', 'password'], data => {
         if (data === undefined) return;
 
         for (let i = 0; i < data.length; i++) {
-            cache.cacheAccount(data[i].username, data[i].id, data[i].password);
+            cacheAccount(data[i].username, data[i].id, data[i].password);
         }
 
         console.log(`=====> Cached: ${data.length} Accounts`);

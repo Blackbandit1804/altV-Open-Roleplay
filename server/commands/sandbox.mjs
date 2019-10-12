@@ -4,6 +4,7 @@ import * as configurationItems from '../configuration/items.mjs';
 import fs from 'fs';
 import { addWeapon } from '../systems/inventory.mjs';
 import { addXP, setXP } from '../systems/skills.mjs';
+import { generateHash } from '../utility/encryption.mjs';
 
 console.log('Loaded: commands->sandbox.mjs');
 
@@ -15,7 +16,6 @@ const sandboxhelp = [
     '/addcash (amount)',
     '/addwep (name)',
     '/face, /addxp, /setxp',
-    '/granola, /coffee',
     '/tpto (rp-name)',
     '/players, /clearchat',
     '/taxi, /mechanic',
@@ -23,7 +23,8 @@ const sandboxhelp = [
     '/quitjob, /getsector',
     '/tryparticle',
     '/phonenumber',
-    '/t, /call, /addcontact, /removecontact, /hangup'
+    '/t, /call, /addcontact, /removecontact, /hangup',
+    '/d20 /flipcoin, /sf'
 ];
 
 chat.registerCmd('help', player => {
@@ -54,16 +55,6 @@ chat.registerCmd('addwep', (player, arg) => {
 
 chat.registerCmd('face', player => {
     player.showFaceCustomizerDialogue(player.pos);
-});
-
-chat.registerCmd('granola', player => {
-    let itemTemplate = configurationItems.Items['GranolaBar'];
-    player.addItem(itemTemplate, 5);
-});
-
-chat.registerCmd('coffee', player => {
-    let itemTemplate = configurationItems.Items['Coffee'];
-    player.addItem(itemTemplate, 5);
 });
 
 chat.registerCmd('additem', (player, arg) => {

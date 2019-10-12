@@ -287,6 +287,18 @@ export const BaseItems = {
         },
         slot: -1
     },
+    refineddrug: {
+        eventcall: 'itemeffects:Consume',
+        abilities: {
+            drop: true,
+            use: false,
+            destroy: true,
+            sell: true,
+            rename: false,
+            stack: true
+        },
+        slot: -1
+    },
     license: {
         eventcall: 'itemeffects:ShowLicense',
         abilities: {
@@ -298,6 +310,28 @@ export const BaseItems = {
             stack: false
         },
         slot: -1
+    },
+    rope: {
+        eventcall: '',
+        abilities: {
+            drop: true,
+            use: false,
+            destroy: true,
+            sell: false,
+            rename: false,
+            stack: false
+        }
+    },
+    cuffs: {
+        eventcall: '',
+        abilities: {
+            drop: false,
+            use: false,
+            destroy: true,
+            sell: false,
+            rename: false,
+            stack: false
+        }
     }
 };
 
@@ -472,7 +506,43 @@ export const Items = {
         key: 'unrefinedkevlarium',
         props: {},
         quantity: 0,
-        icon: 'leaves'
+        icon: 'leaf'
+    },
+    refinedkevlarium: {
+        name: 'Refined Kevlarium',
+        base: 'refineddrug',
+        key: 'refinedkevlarium',
+        props: {
+            armour: 5,
+            health: -8
+        },
+        quantity: 0,
+        icon: 'pills'
+    },
+    unrefinedvigorium: {
+        name: 'Unrefined Vigorium Seeds',
+        base: 'unrefined',
+        key: 'unrefinedvigorium',
+        props: {},
+        quantity: 0,
+        icon: 'seeds'
+    },
+    refinedvigorium: {
+        name: 'Refined Vigorium',
+        base: 'refineddrug',
+        key: 'refinedvigorium',
+        props: {
+            skillbonus: [
+                {
+                    skill: 'agility',
+                    level: 5,
+                    time: 60000
+                }
+            ],
+            health: -8
+        },
+        quantity: 0,
+        icon: 'syringe'
     },
     pickaxe1: {
         name: 'Rusty Pickaxe',
@@ -627,5 +697,21 @@ export const Items = {
         props: {},
         quantity: 0,
         icon: 'id-card'
+    },
+    rope: {
+        name: 'Bundle of Rope (5 Min)',
+        base: 'rope',
+        key: 'rope',
+        props: {},
+        quantity: 0,
+        icon: 'rope'
+    },
+    cuffs: {
+        name: 'Cuffs (10 Min)',
+        base: 'cuffs',
+        key: 'cuffs',
+        props: {},
+        quantity: 0,
+        icon: 'cuffs'
     }
 };

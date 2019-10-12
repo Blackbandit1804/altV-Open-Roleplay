@@ -1,20 +1,20 @@
 import * as alt from 'alt';
-import { View } from '/client/utility/view.mjs';
 
 alt.log(`Loaded: client->panels->help.mjs`);
 
 const url = 'http://resource/client/html/help/index.html';
 let webview;
+let isViewShown = false;
 
 // Show the help dialogue
 export function toggleHelp() {
     if (!webview) {
-        webview = new View();
-        webview.open(url, false);
-    } else {
-        webview.close();
-        webview = undefined;
+        webview = new alt.WebView(url);
     }
 
-}
+    // hide the chat while help is shown
+    alt.emit('chat:Toggle');
 
+    isViewShown = !isViewShown;
+    webview.emit('help:Toggle', isViewShown);
+}

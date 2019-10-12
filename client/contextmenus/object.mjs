@@ -1,6 +1,7 @@
 import * as alt from 'alt';
 import * as native from 'natives';
 import { ContextMenu } from '/client/systems/context.mjs';
+import { distance } from '/client/utility/vector.mjs';
 
 alt.log('Loaded: client->contextmenus->object.mjs');
 
@@ -162,6 +163,12 @@ let objectInteractions = {
     // Mineshaft Door
     3053754761: {
         func: mineshaft
+    },
+    3213942386: {
+        func: humanelabs
+    },
+    631614199: {
+        func: doorControl
     }
 };
 
@@ -172,6 +179,8 @@ chairs.forEach(item => {
 });
 
 alt.on('menu:Object', ent => {
+    if (alt.Player.local.getMeta('arrest')) return;
+
     let model = native.getEntityModel(ent);
 
     // find interaction; and call it if necessary.
@@ -285,10 +294,49 @@ function mineshaft(ent) {
     // Inside Entity -> 111131
     // Outside Entity -> 145179
     // Outside Model -> 3053754761
-
     native.deleteEntity(ent);
     native.setEntityCollision(ent, false, false);
     native.setEntityAlpha(ent, 0, false);
+}
+
+function humanelabs(ent) {
+    const dist = distance(
+        { x: 3626.514404296875, y: 3752.325439453125, z: 28.515737533569336 },
+        alt.Player.local.pos
+    );
+
+    if (dist > 15) return;
+    alt.emitServer('use:ExitLabs');
+}
+
+function doorControl(ent) {
+    const pos = native.getEntityCoords(ent, false);
+    const type = native.getEntityModel(ent);
+    const [_, locked, _2] = native.getStateOfClosestDoorOfType(
+        type,
+        pos.x,
+        pos.y,
+        pos.z,
+        undefined,
+        undefined
+    );
+
+    new ContextMenu(ent, [
+        {
+            label: `Locked: ${locked}`
+        },
+        {
+            label: 'Toggle',
+            isServer: true,
+            event: 'use:ToggleDoor',
+            data: {
+                type,
+                pos,
+                heading: 0,
+                locked
+            }
+        }
+    ]);
 }
 
 function chair(ent) {

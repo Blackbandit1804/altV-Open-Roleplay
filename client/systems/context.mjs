@@ -197,6 +197,16 @@ export function hideContext() {
 }
 
 function useMenu() {
+    if (alt.Player.local.getMeta('viewOpen')) {
+        if (interval) {
+            alt.clearInterval(interval);
+            interval = undefined;
+            currentContext = undefined;
+            rayCastInfo = undefined;
+        }
+        return;
+    }
+
     native.setMouseCursorSprite(1);
 
     if (currentContext !== undefined) {
@@ -268,6 +278,9 @@ function mapMenu(ent, coords) {
 function pedMenu(ent, coords) {
     if (ent === alt.Player.local.scriptID) {
         alt.emit('menu:Player', ent);
+        return;
+    } else {
+        alt.emit('menu:Ped', ent);
         return;
     }
 }

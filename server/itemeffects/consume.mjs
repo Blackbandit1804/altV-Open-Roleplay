@@ -12,8 +12,23 @@ alt.on('itemeffects:Consume', (player, item, hash) => {
     }
 
     // Add armor to the user.
-    if (item.props.armor !== undefined) {
-        player.armor += item.props.armor;
+    if (item.props.armour !== undefined) {
+        player.armour += item.props.armour;
+    }
+
+    if (item.props.skillbonus) {
+        if (!player.skillBonus) {
+            player.skillBonus = {};
+        }
+
+        item.props.skillbonus.forEach(data => {
+            player.skillBonus[data.skill] = {
+                level: data.level,
+                time: Date.now() + 60000
+            };
+            player.send(`You feel more adapt in ${data.skill}.`);
+        });
+        player.emitMeta('skills:Bonus', player.skillBonus);
     }
 
     player.send(`You consume the ${item.name}`);
