@@ -51,8 +51,11 @@ Open Roleplay is a base gamemode for Roleplay servers. It will include the ideal
     -   [ ] Weapon Crafting Points
 -   [x] Vehicle System
     -   [x] Vehicle Customization
-    -   [ ] Vehicle Fuel System
-    -   [ ] Vehicle Vendor
+    -   [x] Vehicle Fuel System
+    -   [x] Vehicle Vendor
+    -   [ ] Destroy Vehicles
+    -   [ ] Sell Vehicles
+    -   [x] Track Vehicles
 -   [ ] Door System
     -   [ ] House Type
     -   [ ] Shop System
@@ -80,12 +83,12 @@ Open Roleplay is a base gamemode for Roleplay servers. It will include the ideal
     -   [x] Interaction for Vehicles
     -   [ ] Interaction for Players
         -   [ ] Give Money
+        -   [ ] Burn Money
     -   [x] Interaction for Objects
     -   [x] Interaction for Self
         -   [x] Animations for Sitting
 -   [x] Player Death Handling
 -   [x] Taxation
-    -   [ ] Taxation goes to Government Fund
 -   [x] Animation Manager
 -   [x] Context Menu of Animations
 -   [x] Custom Sounds! Blat!
@@ -164,7 +167,12 @@ Open Roleplay is a base gamemode for Roleplay servers. It will include the ideal
     -   [ ] Extra Vehicle Slots for Hours Played
 -   [x] Police Officer Utilities
     -   [x] Cuffing / Binding
-    -   [ ] Mobile Data Computer
+    -   [x] Mobile Data Computer
+    -   [x] Frisking
+    -   [x] Charges for Illegal Activities
+    -   [x] Arrest Times
+    -   [ ] Prison Transfer Job
+    -   [ ] High Speed Pursuit Unit
 
 I will not be providing direct support for this gamemode; if you have an issue or come across actual functionality issues please raise an issue in the **issues** tab. Otherwise; additional help can be found by subscribing through [my twitch page and joining discord](https://www.twitch.tv/stuyksoft/).
 
@@ -203,15 +211,9 @@ Shift + F7 -> Hide Chat
 
 ### Installation
 
-If you don't have NodeJS; please go install it.
+#### If you don't have NodeJS v12+; please go install it.
 
-The file structure below is the **required** structure you must use for this game mode. You must follow it exactly for this resource to work.
-
--   Grab the latest version of the alt:V server files. They must be clean. No resources.
-
--   Download [Postgres-Wrapper](https://github.com/team-stuyk-alt-v/altV-Postgres-Wrapper) this is the Postgres SQL helper that was written to make database usage easy. Extract it and put this into a folder called `postgres-wrapper`. Directly inside you should have `resource.cfg` if done correctly.
-
--   Install version **11.5** of [PostgresSQL](https://www.postgresql.org/download/) for either windows, linux, or whatever OS you're running.
+-   Install version **v11.5** of [PostgresSQL](https://www.postgresql.org/download/) for either windows, linux, or whatever OS you're running.
 
 -   Once installed you need to create a username and password for your database; and create a database called 'altv' or something else if you know what you're doing. **PAY ATTENTION HERE YOU'LL NEED THIS INFO**
 
@@ -226,91 +228,40 @@ After; it should be running automatically in your services on windows. You can a
 
 ![](https://i.imgur.com/6pA8PWB.png)
 
--   Download the latest version of this resource. You can either clone the repository or simply download it. The `resource.cfg` and the rest of the files should be directly inside of a folder called `orp`.
+**Creating on Linux with Terminal ( UBUNTU 18.04 (Don't use 16.04 it's a pain in the ass.) )**
 
--   To configure your database, you will need the `resources/orp/server/configuration/database.mjs` file configured with the required parameters to connect to your database. Open `database.mjs.example`, fill out the required parameters, and save it to a new file named `database.mjs`.
+-   Follow these instructions up to Step 3: [Installing Postgres on Ubuntu](https://tecadmin.net/install-postgresql-server-on-ubuntu/)
 
-**Example Database Configuration**
+-   Type: `su - postgres`
 
-```js
-export const DatabaseInfo = {
-    username: 'postgres',
-    password: 'abc123',
-    address: 'localhost',
-    port: 5432,
-    dbname: 'altv'
-};
-```
+-   Type: `psql`
 
-**Example Folder Structure**
+-   Type: `CREATE DATABASE altv;`
 
-```yaml
-altVServerFolder/
-└── resources/
-|   ├── orp/
-|   |   ├── server/
-|   |   ├── client/
-|   |   └── resource.cfg
-|   ├── postgres-wrapper/
-|   |   ├── client.mjs
-|   |   ├── database.mjs
-|   |	└── resource.cfg
-└── package.json
-└── altv-server.exe
-└── node_modules/
-```
+-   If all is well you will see `CREATE DATABASE` or something similar replied.
 
-**Installing Packages for NodeJS**
-After installing the above; if you don't have a package.json in your main server directory where your .exe is you're going to need to do the following:
+-   Type: `CREATE USER stuyk WITH ENCRYPTED PASSWORD 'abc123';`
 
-Open a command prompt or powershell next to your .exe file
+-   If all is well you will see `CREATE ROLE` replied.
 
-```
-npm init
-```
+-   We now have a user called `stuyk` with a password of `abc123`. We need to assign to db.
 
-or
+-   Type: `GRANT ALL PRIVILEGES ON DATABASE altv TO stuyk;`
 
-```
-yarn init
-```
+-   If all is well you wil see `GRANT` replied.
 
-Then press enter a bunch of times until its done stepping you through.
+-   Type: `\q` to exit.
 
-After you need to install the following packages from command prompt or power shell.
+-   Type: `sudo -u root`
 
-```
-npm install typeorm
-npm install sjcl
-npm install pg
-```
+-   This will bring you back to your root account.
 
-or
+-   Now follow the rest of the steps below.
 
-```
-yarn add typeorm sjcl pg
-```
+---
 
-Great; now you have all the prerequisites.
+-   Download the latest version of this resource.
 
-Open your `server.cfg` next to your `altv-server.exe`.
+-   Open a command prompt and run `npm run orp`. **FOLLOW THE INSTRUCTIONS CAREFULLY ON PROMPT**.
 
-You need to add `orp` to resources.
-
-```
-name: 'Open RP'
-host: 0.0.0.0
-port: 7766
-players: 1000
-announce: false
-gamemode: OpenRP
-website: twitch.tv/stuykgaming
-language: lang-here
-description: 'Using Open Roleplay'
-modules: [ node-module ]
-resources: [ orp ]
-token: ''
-debug: 'true'
-```
-
-That's about it; once you run it you'll be greeted with terms and conditions and you can follow the additional instructions from there.
+-   Run `altv-server.exe` or `./start.sh`. If you're on Linux you may need to set permission for `altv-server`.
