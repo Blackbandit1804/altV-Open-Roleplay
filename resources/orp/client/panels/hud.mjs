@@ -1,5 +1,6 @@
 import * as alt from 'alt';
 import * as native from 'natives';
+import { showCursor } from '/client/utility/cursor.mjs';
 
 alt.log('Loaded: client->panels->chat.mjs');
 
@@ -9,6 +10,13 @@ let contextData = new Map();
 let isContextOpen = false;
 let lastX;
 let lastY;
+let weather;
+
+alt.on('view:DestroyAll', () => {
+    if (webview) {
+        webview.destroy();
+    }
+});
 
 /*
 Warning; this is meant to be a seperate webview.
@@ -28,8 +36,13 @@ function showDialogue() {
     if (webview === undefined) {
         webview = new alt.WebView(url);
         webview.on('context:Click', contextClick);
+        webview.on('hud:Ready', ready);
         webview.unfocus();
     }
+}
+
+function ready() {
+    webview.emit('hud:SetWeather', weather);
 }
 
 function contextClick(isServer, eventName, hash) {
@@ -100,14 +113,23 @@ alt.on('meta:Changed', (key, value) => {
     }
 
     if (key === 'queueNotification') {
+        alt.emit('play:Sound', 'notification', 0.5, 0.1);
         webview.emit('hud:QueueNotification', value);
     }
 
     if (key === 'hudNotice') {
-        webview.emit('hud:SetHudNotice', msg);
+        webview.emit('hud:SetHudNotice', value);
     }
 });
 
 alt.on('hud:QueueNotification', msg => {
+    if (!webview) return;
     webview.emit('hud:QueueNotification', msg);
+    alt.emit('play:Sound', 'notification', 0.5, 0.1);
+});
+
+alt.on('hud:UpdateWeather', weatherName => {
+    if (!webview) return;
+    weather = weatherName;
+    webview.emit('hud:SetWeather', weatherName);
 });

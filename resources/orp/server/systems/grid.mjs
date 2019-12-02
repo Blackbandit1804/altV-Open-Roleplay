@@ -18,6 +18,7 @@ const width = 600;
 const length = 600;
 
 const sectors = new Map();
+export const colshapes = [];
 
 let pairs = [];
 for (let row = 0; row <= rows; row++) {
@@ -31,17 +32,21 @@ for (let row = 0; row <= rows; row++) {
     }
 }
 
+// Generates from left to right; from the bottom to the top.
+// South to North
+// West to East
 pairs.forEach((row, sector) => {
     sectors.set(sector, row);
     row.forEach((column, index) => {
         let colshape = new alt.ColshapeCuboid(
             column.pos1.x,
             column.pos1.y,
-            -500,
+            -20,
             column.pos2.x,
             column.pos2.y,
             10000
         );
+
         colshape.sector = {
             x: index,
             y: sector,
@@ -49,7 +54,7 @@ pairs.forEach((row, sector) => {
                 first: {
                     x: column.pos1.x,
                     y: column.pos1.y,
-                    z: -500
+                    z: -20
                 },
                 second: {
                     x: column.pos2.x,
@@ -58,11 +63,22 @@ pairs.forEach((row, sector) => {
                 }
             },
             width: width,
-            length: length
+            length: length,
+            name: `${String.fromCharCode(65 + index)}${sector}`,
+            doors: []
         };
+
         colshape.sector.seed = new RandomNumberGenerator(
             JSON.stringify(colshape.sector),
             false
         );
+
+        colshape.gangs = {
+            owner: -1,
+            nextClaim: Date.now()
+        };
+
+        colshape.players = [];
+        colshapes.push(colshape);
     });
 });

@@ -13,8 +13,10 @@ const terms = {
     terms: [
         'By using this software for your Roleplay mode you agree to the following:',
         'Manipulation of bootscreen logos, and splash marks may not be removed. This data',
-        'must be present and unmodified for each user that enters your server. Setting',
-        'the agreement boolean below to true; means you AGREE to these terms and',
+        'must be present and unmodified for each user that enters your server. Monetization ',
+        'of this game mode is STRICTLY PROHIBITED. You may NOT establish any form of monetization',
+        'features in this gamemode. \r\n',
+        'Setting the agreement boolean below to true; means you AGREE to these terms and',
         'conditions. \r\n',
         'If you have any issues with these conditions; contact Stuyk promptly.',
         'If you agree with these terms. Please type true.',
@@ -22,6 +24,7 @@ const terms = {
     ],
     do_you_agree: false
 };
+
 let dbDefault = {
     type: 'postgres',
     username: 'postgres',
@@ -29,6 +32,11 @@ let dbDefault = {
     address: 'localhost',
     port: 5432,
     dbname: 'altv'
+};
+
+let discordAppInfo = {
+    discord: '',
+    token: ''
 };
 
 let windowsURLS = [
@@ -204,8 +212,67 @@ async function startup() {
         console.log('\r\nSkipping DB setup.');
     }
 
+    const newDiscordInfo =
+        'Setup new Discord information for Login Data? (y/n). Default is y\r\n';
+    res = await question(newDiscordInfo);
+
+    if (!res) res = 'y';
+
+    if (res === 'y') {
+        res = undefined;
+
+        console.log('!!! IMPORTANT INFORMATION FOR DISCORD SETUP !!!');
+        console.log('Please Create a Discord Application for your Login System.');
+        console.log('Please Visit: https://discordapp.com/developers/applications/');
+        console.log('1. Hit New Application');
+        console.log('2. Set the Name for Your Bot / Application');
+        console.log('3. Click on the `Bot` tab.');
+        console.log('4. Transform your Application into a bot.');
+        console.log('5. Name your bot.');
+        console.log('6. Tick `Administrator` or just `Send/Read Messages`');
+        console.log('7. Copy the bots secret token.');
+        console.log('8. Make sure the bot is not public.');
+        console.log('9. Navigate to oAuth2 tab. Tick `bot` in scopes.');
+        console.log('10. Copy the URL inside of scopes. Paste in browser.');
+        console.log('11. Add the bot to your designated Discord.');
+
+        const discordBotTokenQ = '\r\nPlease enter your BOT SECRET TOKEN... \r\n';
+        res = await question(discordBotTokenQ);
+
+        if (res) {
+            discordAppInfo.token = res;
+            res = undefined;
+        }
+
+        const discordPublicURLQ =
+            '\r\nPlease enter a public discord url to display to users so they can join. \r\n';
+        res = await question(discordPublicURLQ);
+
+        if (res) {
+            discordAppInfo.discord = res;
+            res = undefined;
+        }
+
+        const discordConfigPath = path.join(
+            __dirname,
+            '/resources/orp/server/discord/configuration.json'
+        );
+
+        await new Promise(resolve => {
+            fs.writeFile(
+                discordConfigPath,
+                JSON.stringify(discordAppInfo, null, '\t'),
+                () => {
+                    console.log('\r\nDiscord Login Configured\r\n');
+                    resolve();
+                }
+            );
+        });
+    }
+
     console.log(`Downloading Latest alt:V Server Files.`);
-    const q6 = '\r\nWhich alt:V Branch? 0: Stable, 1: Beta\r\n';
+    const q6 =
+        '\r\nWhich alt:V Branch? 0: Stable, 1: Beta, 2: Alpha [Default: Stable]\r\n';
     res = await question(q6);
 
     if (!res) {
@@ -213,13 +280,37 @@ async function startup() {
     }
 
     if (parseInt(res) === 0) {
-        windowsURLS.forEach(res => {
-            res.url = res.url.replace('beta', 'stable');
-        });
+        if (platform === 'windows') {
+            console.log('Windows');
+            windowsURLS.forEach(res => {
+                res.url = res.url.replace('beta', 'stable');
+            });
+            console.log('You have selected the STABLE branch.');
+        } else {
+            console.log('Linux');
+            linuxURLS.forEach(res => {
+                res.url = res.url.replace('beta', 'stable');
+            });
+            console.log('You have selected the STABLE branch.');
+        }
+    }
 
-        console.log('You have selected the STABLE branch.');
-    } else {
+    if (parseInt(res) === 1) {
         console.log('You have selected the BETA branch.');
+    }
+
+    if (parseInt(res) === 2) {
+        if (platform === 'windows') {
+            windowsURLS.forEach(res => {
+                res.url = res.url.replace('beta', 'alpha');
+            });
+            console.log('You have selected the STABLE branch.');
+        } else {
+            linuxURLS.forEach(res => {
+                res.url = res.url.replace('beta', 'alpha');
+            });
+            console.log('You have selected the STABLE branch.');
+        }
     }
 
     if (platform === 'windows') {

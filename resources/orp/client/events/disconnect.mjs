@@ -10,6 +10,8 @@ alt.on('disconnect', () => {
     native.renderScriptCams(false, false, 0, false, false);
     native.transitionFromBlurred(0);
 
-    // Cleanup any spawned peds.
-    panelsCharacter.cleanupSpawnedPed();
+    alt.emit('view:DestroyAll');
+
+    // Cleanup Peds
+    alt.emit('peds:Delete');
 });

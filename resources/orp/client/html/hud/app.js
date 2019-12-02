@@ -13,7 +13,7 @@ class App extends Component {
             showContext: false,
             data: {
                 cash: 25,
-                location: 'Some Stupid Street',
+                location: '404 Location Not Found',
                 speed: '',
                 sprintbar: 0.5,
                 minigametext: '',
@@ -24,9 +24,11 @@ class App extends Component {
             notification: '',
             noteFade: 0.0,
             xOffset: 0,
-            isInVehicle: false
+            isInVehicle: false,
+            watermark: 'O:RP - Created by Stuyk - www.github.com/stuyk'
         };
         this.contextRef = createRef();
+        setInterval(this.notificationInterval.bind(this), 1000);
     }
 
     componentDidMount() {
@@ -41,6 +43,11 @@ class App extends Component {
             alt.on('hud:SetHudNotice', this.setHudNotice.bind(this));
             alt.on('hud:QueueNotification', this.queueNotification.bind(this));
             alt.on('hud:isInVehicle', this.isInVehicle.bind(this));
+            alt.on('hud:SetWeather', this.setWeather.bind(this));
+
+            setTimeout(() => {
+                alt.emit('hud:Ready');
+            }, 500);
         } else {
             this.setContextPosition(0, 0);
             for (let i = 0; i < 5; i++) {
@@ -52,12 +59,34 @@ class App extends Component {
             data.notice = 'BIG Ol Words';
             this.setState({ data });
 
-            this.queueNotification(
-                'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.'
-            );
-            this.queueNotification('Hello World B');
-            this.queueNotification('Hello World C');
+            /*
+            setInterval(() => {
+                this.queueNotification(
+                    `Message Test - ${Math.floor(Math.random() * 50)}`
+                );
+            }, 500);
+            */
+
+            this.setWeather('thunder');
+            //this.adjustHud(true);
         }
+    }
+
+    notificationInterval() {
+        if (this.state.notifications.length <= 0) return;
+        let notifications = [...this.state.notifications];
+        notifications.forEach((note, index) => {
+            if (Date.now() > note.endTime) {
+                notifications.splice(index, 1);
+            }
+        });
+
+        if (notifications.length === this.state.notifications.length) return;
+        this.setState({ notifications });
+    }
+
+    setWeather(name) {
+        this.setState({ weather: name });
     }
 
     adjustHud(shouldAdjust) {
@@ -74,42 +103,8 @@ class App extends Component {
 
     queueNotification(msg) {
         const notifications = [...this.state.notifications];
-
-        if (msg.length > 100) {
-            msg = msg.slice(0, 100) + '...';
-        }
-
-        // Start a timeout if it doesn't exist.
-        if (notifications.length === 0 && this.state.notification === '') {
-            setTimeout(() => {
-                this.parseNotification();
-            }, 3500);
-        }
-
-        if (this.state.notification === '') {
-            this.setState({ notifications, notification: msg });
-        } else {
-            notifications.push(msg);
-            this.setState({ notifications });
-        }
-    }
-
-    parseNotification() {
-        const notifications = [...this.state.notifications];
-        if (notifications.length <= 0) {
-            this.setState({ notifications: [], notification: '' });
-            return;
-        }
-
-        this.setState({ notification: '' });
-
-        setTimeout(() => {
-            const notification = notifications.shift();
-            this.setState({ notifications, notification });
-            setTimeout(() => {
-                this.parseNotification();
-            }, 3500);
-        }, 1000);
+        notifications.push({ message: msg, endTime: Date.now() + 5000 });
+        this.setState({ notifications });
     }
 
     setHudNotice(notice) {
@@ -161,6 +156,21 @@ class App extends Component {
         }
     }
 
+    displayNotifications() {
+        const notifications = this.state.notifications.map(note => {
+            return h('div', { class: 'notification' }, note.message);
+        });
+        notifications.unshift(h('div', { class: 'txt' }, this.state.watermark));
+        return h(
+            'div',
+            {
+                class: 'notifications',
+                style: `right: ${this.state.xOffset + 25}px !important;`
+            },
+            notifications
+        );
+    }
+
     displayItems() {
         const contextItems = this.state.items.map(item => {
             return h(
@@ -199,6 +209,11 @@ class App extends Component {
             'div',
             { class: 'hud' },
             this.state.showContext && h(this.displayItems.bind(this), null),
+            !this.state.watermark &&
+                h('div', {
+                    style:
+                        'position: fixed !important; width: 100%; height: 100%; display: block !important; background: black !important; z-index: 99'
+                }),
             h(
                 'div',
                 {
@@ -232,6 +247,19 @@ class App extends Component {
                     },
                     'SPRINT'
                 ),
+            this.state.weather &&
+                h(
+                    'div',
+                    {
+                        class: 'weather',
+                        style: `right: ${this.state.xOffset + 25}px !important`
+                    },
+                    h('svg', {
+                        type: 'image/svg+xml',
+                        style: `background: url('../icons/${this.state.weather}.svg');`
+                    })
+                ),
+
             // Vehicle Speed Data
             this.state.data.speed !== '' &&
                 h(
@@ -242,20 +270,12 @@ class App extends Component {
                     this.state.data.speed
                 ),
             // player.notice
-            this.state.data.notice !== '' &&
-                h('div', { class: 'notice' }, this.state.data.notice),
+            this.state.notice !== '' && h('div', { class: 'notice' }, this.state.notice),
             // Minigame Text for Jobs
             this.state.data.minigametext !== '' &&
                 h('div', { class: 'minigametext' }, this.state.data.minigametext),
             // Notifications
-            h(
-                'div',
-                {
-                    class: this.state.notification === '' ? '' : 'notification',
-                    style: `right: ${this.state.xOffset + 25}px !important;`
-                },
-                this.state.notification
-            )
+            h(this.displayNotifications.bind(this))
         );
     }
 }

@@ -1,6 +1,7 @@
 import * as alt from 'alt';
 import { Config } from '../configuration/config.mjs';
 import { actionMessage } from '../chat/chat.mjs';
+import { addXP } from '../systems/skills.mjs';
 
 let nextVehicleSaveTime = Date.now() + Config.vehicleSaveTime;
 let handling = false;
@@ -11,11 +12,15 @@ function handleVehicleInterval() {
     alt.emit('interval:Vehicle');
     if (handling) return;
     handling = true;
+    const now = Date.now();
     for (let i = 0; i < alt.Vehicle.all.length; i++) {
         const vehicle = alt.Vehicle.all[i];
-        const now = Date.now();
         if (!vehicle) continue;
         alt.emit('parse:Vehicle', vehicle, now);
+    }
+
+    if (now > nextVehicleSaveTime) {
+        nextVehicleSaveTime = now + Config.vehicleSaveTime;
     }
 
     handling = false;
@@ -28,8 +33,7 @@ alt.on('parse:Vehicle', (vehicle, now) => {
     }
 
     // Save Vehicles
-    if (Date.now() > nextVehicleSaveTime) {
-        nextVehicleSaveTime = Date.now() + Config.vehicleSaveTime;
+    if (now > nextVehicleSaveTime) {
         if (vehicle.saveVehicleData) {
             try {
                 vehicle.saveVehicleData();
@@ -52,7 +56,36 @@ alt.on('parse:Vehicle', (vehicle, now) => {
                 }
                 vehicle.isBeingFilled = undefined;
             } catch (err) {
+                vehicle.isBeingFilled = undefined;
                 console.error('Failed to refill tank of vehicle.');
+            }
+        }
+    }
+
+    // Check for Repair Update
+    if (vehicle.isBeingRepaired) {
+        const player = vehicle.isBeingRepaired.player;
+        if (!player) {
+            vehicle.isBeingRepaired = undefined;
+            return;
+        }
+
+        player.playAudio3D(player, 'ratchet');
+        if (now > vehicle.isBeingRepaired.time) {
+            try {
+                if (player.vehicle) {
+                    player.notify('You cannot be inside a vehicle while repairing.');
+                    vehicle.isBeingRepaired = undefined;
+                    return;
+                }
+
+                addXP(player, 'mechanic', 25);
+                actionMessage(player, 'Successfully repairs the vehicle.');
+                alt.emitClient(player, 'vehicle:FinishRepair');
+                vehicle.repair();
+                vehicle.isBeingRepaired = undefined;
+            } catch (err) {
+                console.error('Failed to repair the vehicle.');
             }
         }
     }

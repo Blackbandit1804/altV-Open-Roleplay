@@ -5,31 +5,45 @@ import { distance } from '/client/utility/vector.mjs';
 alt.log('Loaded: client->systems->sound.mjs');
 
 let webview = new alt.WebView('http://resource/client/html/sound/index.html');
+let cooldown = Date.now();
+
+alt.on('play:Sound', playAudio);
 
 export function playAudio(soundName, pan = 0, volume = 0.35) {
+    if (Date.now() < cooldown) return;
+    cooldown = Date.now() + 10;
+
     webview.emit('playAudio', soundName, pan, volume);
 }
 
 export function playAudio3D(target, soundName) {
+    if (Date.now() < cooldown) return;
+    cooldown = Date.now() + 10;
+
     if (!target || !soundName) return;
 
     const dist = distance(target.pos, alt.Player.local.pos);
     let volume = 0.35;
     let pan = 0;
 
-    if (!native.isEntityOnScreen(target.scriptID)) {
-        volume -= 0.25;
+    if (alt.Player.local.scriptID !== target.scriptID) {
+        if (!native.isEntityOnScreen(target.scriptID)) {
+            volume -= 0.25;
+        } else {
+            const pos = target.pos;
+            const [_, x, y] = native.getScreenCoordFromWorldCoord(
+                pos.x,
+                pos.y,
+                pos.z,
+                undefined,
+                undefined
+            );
+            pan = x * 2 - 1;
+            volume = dist / 100 / 0.35;
+        }
     } else {
-        const pos = target.pos;
-        const [_, x, y] = native.getScreenCoordFromWorldCoord(
-            pos.x,
-            pos.y,
-            pos.z,
-            undefined,
-            undefined
-        );
-        pan = x * 2 - 1;
-        volume = dist / 100 / 0.35;
+        volume = 0.35;
+        alt.emitServer('audio:Sync3D', soundName);
     }
 
     webview.emit('playAudio', soundName, pan, volume);

@@ -4,14 +4,13 @@ import { createBlip } from '/client/blips/bliphelper.mjs';
 
 alt.log('Loaded: client->systems->vehicles.mjs');
 
-alt.on('meta:Changed', startInterval);
-
 alt.on('gameEntityCreate', entity => {
     if (entity.constructor.name === 'Vehicle') {
         const primaryPaint = entity.getSyncedMeta('primaryPaint');
         const secondaryPaint = entity.getSyncedMeta('secondaryPaint');
         const primaryColor = entity.getSyncedMeta('primaryColor');
         const secondaryColor = entity.getSyncedMeta('secondaryColor');
+        const wheels = entity.getSyncedMeta('vehicleWheels');
 
         alt.setTimeout(() => {
             if (primaryPaint) {
@@ -25,54 +24,72 @@ alt.on('gameEntityCreate', entity => {
             if (primaryColor) {
                 native.setVehicleCustomPrimaryColour(
                     entity.scriptID,
-                    primaryColor[0],
-                    primaryColor[1],
-                    primaryColor[2]
+                    primaryColor.r,
+                    primaryColor.g,
+                    primaryColor.b
                 );
             }
 
             if (secondaryColor) {
                 native.setVehicleCustomSecondaryColour(
                     entity.scriptID,
-                    secondaryColor[0],
-                    secondaryColor[1],
-                    secondaryColor[2]
+                    secondaryColor.r,
+                    secondaryColor.g,
+                    secondaryColor.b
                 );
+            }
+
+            if (wheels) {
+                native.setVehicleMod(entity.scriptID, 23, wheels, true);
+                native.setVehicleMod(entity.scriptID, 24, wheels, true);
             }
         }, 1000);
     }
 });
 
 alt.on('syncedMetaChange', (entity, key, value) => {
-    if (entity.constructor.name !== 'Vehicle') return;
-
-    alt.setTimeout(() => {
-        if (key === 'primaryPaint') {
-            native.setVehicleModColor1(entity.scriptID, value, 0, 0);
+    if (key === 'fuel') {
+        if (value <= 0) {
+            native.setVehicleUndriveable(entity.scriptID, true);
+        } else {
+            native.setVehicleUndriveable(entity.scriptID, false);
         }
+    }
 
-        if (key === 'secondaryPaint') {
-            native.setVehicleModColor2(entity.scriptID, value, 0, 0);
-        }
+    if ('Vehicle') {
+        alt.setTimeout(() => {
+            if (key === 'primaryPaint') {
+                native.setVehicleModColor1(entity.scriptID, value, 0, 0);
+            }
 
-        if (key === 'primaryColor') {
-            native.setVehicleCustomPrimaryColour(
-                entity.scriptID,
-                value[0],
-                value[1],
-                value[2]
-            );
-        }
+            if (key === 'secondaryPaint') {
+                native.setVehicleModColor2(entity.scriptID, value, 0, 0);
+            }
 
-        if (key === 'secondaryColor') {
-            native.setVehicleCustomSecondaryColour(
-                entity.scriptID,
-                value[0],
-                value[1],
-                value[2]
-            );
-        }
-    }, 1000);
+            if (key === 'primaryColor') {
+                native.setVehicleCustomPrimaryColour(
+                    entity.scriptID,
+                    value.r,
+                    value.g,
+                    value.b
+                );
+            }
+
+            if (key === 'secondaryColor') {
+                native.setVehicleCustomSecondaryColour(
+                    entity.scriptID,
+                    value.r,
+                    value.g,
+                    value.b
+                );
+            }
+
+            if (key === 'vehicleWheels') {
+                native.setVehicleMod(entity.scriptID, 23, value, true);
+                native.setVehicleMod(entity.scriptID, 24, value, true);
+            }
+        }, 1000);
+    }
 });
 
 alt.on('vehicle:Fuel', () => {
@@ -84,17 +101,15 @@ alt.on('vehicle:Fuel', () => {
     alt.Player.local.fuelLocation = alt.Player.local.pos;
 });
 
-function startInterval(key, value) {
-    if (key !== 'pedflags') return;
-    alt.off('meta:Changed', startInterval);
-    // Disable Vehicle Engine Startup
-    // Disable Shuffling to Driver Seat - Doesn't work?
-    // Disable Motorcylce Helmet
-    native.setPedConfigFlag(alt.Player.local.scriptID, 429, 1);
-    native.setPedConfigFlag(alt.Player.local.scriptID, 184, 1);
-    native.setPedConfigFlag(alt.Player.local.scriptID, 35, 0);
-    // Interval Removed
-}
+alt.onServer('vehicle:Rotate', (vehicle, rot) => {
+    alt.nextTick(() => {
+        native.setEntityCollision(vehicle.scriptID, false, true);
+        alt.setTimeout(() => {
+            native.setEntityHeading(vehicle.scriptID, rot);
+            native.setEntityCollision(vehicle.scriptID, true, true);
+        }, 100);
+    });
+});
 
 export function toggleDoor(vehicle, id, state) {
     if (state) {
@@ -128,9 +143,6 @@ export function repair(vehicle) {
 
 export function startEngine(value) {
     if (!alt.Player.local.vehicle) return;
-
-    alt.log('Starting engine...');
-    alt.log(value);
     native.setVehicleEngineOn(alt.Player.local.vehicle.scriptID, value, false, true);
 }
 
@@ -159,18 +171,15 @@ export function toggleLock() {
 
 // Called from a keybind.
 export function keepEngineRunning() {
-    if (!alt.Player.local.vehicle) return;
-    const pedInSeat = native.getPedInVehicleSeat(alt.Player.local.vehicle.scriptID, -1);
-    if (pedInSeat !== alt.Player.local.scriptID) return;
-    alt.setTimeout(() => {
-        native.setVehicleEngineOn(
-            // Retrieves last vehicle ped was in.
-            native.getVehiclePedIsIn(alt.Player.local.scriptID, 1),
-            true,
-            true,
-            true
-        );
-    }, 250);
+    alt.emitServer('vehicle:LeaveEngineRunning');
+}
+
+export function forceEngineOn(vehicle) {
+    native.setVehicleEngineOn(vehicle.scriptID, true, true, false);
+}
+
+export function killEngine(vehicle) {
+    native.setVehicleEngineOn(vehicle.scriptID, false, true, false);
 }
 
 // Called when the user locks their vehicle.
@@ -206,7 +215,7 @@ export function setIntoVehicle(vehicle) {
 }
 
 export function trackVehicle(pos) {
-    const blip = createBlip(pos, 1, 61, 'A Vehicle Tracker');
+    const blip = createBlip('temporary', pos, 1, 61, 'A Vehicle Tracker');
     alt.emit(
         'hud:QueueNotification',
         `A pink blip was placed on your map named 'A Vehicle Tracker'`
@@ -214,9 +223,35 @@ export function trackVehicle(pos) {
 
     alt.setTimeout(() => {
         try {
-            blip.destroy();
+            native.removeBlip(blip);
         } catch (err) {
             console.log('Locate vehicle blip could not be destroyed.');
         }
     }, 15000);
 }
+
+alt.on('vehicle:BeginRepairingVehicle', data => {
+    const ent = data.ent;
+    const coords = data.coords;
+    const vehicle = data.vehicle;
+
+    // Stop Repair Option
+    alt.Player.local.isRepairing = false;
+    native.setVehicleDoorOpen(ent, 4, false, true);
+    native.freezeEntityPosition(alt.Player.local.scriptID, true);
+    native.taskTurnPedToFaceCoord(
+        alt.Player.local.scriptID,
+        coords.x,
+        coords.y,
+        coords.z,
+        10000
+    );
+
+    // Push repair up to server.
+    alt.emitServer('vehicle:RepairVehicle', data);
+});
+
+alt.onServer('vehicle:FinishRepair', () => {
+    native.freezeEntityPosition(alt.Player.local.scriptID, false);
+    native.clearPedTasks(alt.Player.local.scriptID);
+});

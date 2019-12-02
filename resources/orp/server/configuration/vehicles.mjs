@@ -1163,7 +1163,7 @@ export const Vehicles = [
     },
     {
         display: 'Bati',
-        name: 'bata',
+        name: 'bati',
         type: 'vehicle',
         class: 'motorcycle',
         sell: true
@@ -3232,7 +3232,7 @@ export const Vehicles = [
         name: 'paragon2',
         type: 'vehicle',
         class: 'sport',
-        sell: true
+        sell: false
     },
     {
         display: 'Pariah',

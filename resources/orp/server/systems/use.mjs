@@ -4,6 +4,8 @@ import * as chat from '../chat/chat.mjs';
 import { actionMessage } from '../chat/chat.mjs';
 import { appendToMdc } from './mdc.mjs';
 import { addBoundWeapon } from './inventory.mjs';
+import { getLevel } from './xp.mjs';
+import { FruitStand } from '../configuration/fruitstands.mjs';
 
 export let doorStates = {
     '{"x":461.8065185546875,"y":-994.4085693359375,"z":25.06442642211914}': {
@@ -51,6 +53,8 @@ export function sodaMachine(player) {
         player,
         'Inserts money into the machine; and it spits out a soda.'
     );
+
+    player.playAudio3D(player, 'vending');
 }
 
 export function coffeeMachine(player) {
@@ -65,6 +69,8 @@ export function coffeeMachine(player) {
         player,
         'Inserts money into the machine; and it spits out a canned coffee.'
     );
+
+    player.playAudio3D(player, 'vending');
 }
 
 export function payPhone(player) {
@@ -228,8 +234,6 @@ export function cuffPlayer(arrester, data) {
 }
 
 export function uncuffPlayer(arrester, data) {
-    console.log('We called it.');
-
     const arrestee = data.player;
     if (!arrester || !arrestee) return;
     arrester.cuffedPlayer = null;
@@ -282,4 +286,102 @@ export function fireExtinguisher(player) {
 
     addBoundWeapon(player, 'FireExtinguisher');
     player.send('You pick up the fire extinguisher.');
+}
+
+export function useDynamicDoor(player, data) {
+    alt.emit('door:UseDynamicDoor', player, data);
+}
+
+export function exitDynamicDoor(player, id) {
+    alt.emit('door:ExitDynamicDoor', player, id);
+}
+
+export function lockDynamicDoor(player, data) {
+    alt.emit('door:LockDynamicDoor', player, data);
+}
+
+export function purchaseDynamicDoor(player, data) {
+    alt.emit('door:PurchaseDynamicDoor', player, data);
+}
+
+export function candyDispenser(player) {
+    if (!Items.candy) return;
+
+    if (!player.subCash(2)) {
+        player.send(`You don't have enough money for some candy. {FFFF00}$2.00`);
+        return;
+    }
+
+    player.addItem('candy', 1, Items.candy.props);
+    chat.actionMessage(
+        player,
+        'Inserts money into the candy machine; and it spits out a candy bar.'
+    );
+
+    player.playAudio3D(player, 'gumball');
+}
+
+export function hotdogDispenser(player) {
+    if (!Items.hotdog) return;
+
+    if (!player.subCash(4)) {
+        player.send(`You don't have enough money for a hotdog. {FFFF00}$4.00`);
+        return;
+    }
+
+    player.addItem('hotdog', 1, Items.hotdog.props);
+    chat.actionMessage(player, 'Hands over some cash and recieves a hotdog.');
+    player.playAudio3D(player, 'cook');
+}
+
+export function burgerDispenser(player) {
+    if (!Items.burger) return;
+
+    if (!player.subCash(4)) {
+        player.send(`You don't have enough money for a burger. {FFFF00}$4.00`);
+        return;
+    }
+
+    player.addItem('burger', 1, Items.burger.props);
+    chat.actionMessage(player, 'Hands over some cash and recieves a burger.');
+    player.playAudio3D(player, 'cook');
+}
+
+export function waterDispenser(player, data) {
+    if (!data) return;
+    if (data.hashes.length <= 0) return;
+
+    for (let i = 0; i < data.hashes.length; i++) {
+        if (player.subItemByHash(data.hashes[i])) {
+            player.addItem('waterjug', 1, {});
+        }
+    }
+
+    chat.actionMessage(player, 'Fills their empty jugs with water.');
+    player.playAudio3D(player, 'fillwater');
+}
+
+export function fruitDispenser(player, data) {
+    const choice = data.type;
+    if (!FruitStand.includes(choice.toLowerCase())) {
+        return;
+    }
+
+    if (!player.subCash(5)) {
+        player.send(`You don't have enough money for a ${choice}. {FFFF00}$5.00`);
+        return;
+    }
+
+    const properName = choice.charAt(0).toUpperCase() + choice.slice(1);
+    player.addItem(
+        'ingredient',
+        1,
+        {},
+        false,
+        false,
+        properName,
+        choice,
+        properName.toLowerCase()
+    );
+    player.playAudio('buy');
 }

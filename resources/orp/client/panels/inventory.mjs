@@ -7,7 +7,30 @@ import { getLevel } from '/client/systems/xp.mjs';
 
 alt.log(`Loaded: client->panels->inventory.mjs`);
 
-const options = ['AirplaneMode', 'YandexKey', 'Language'];
+const options = [
+    { name: 'option:atm', description: 'Toggle Blip Type' },
+    { name: 'option:fuel', description: 'Toggle Blip Type' },
+    { name: 'option:hospital', description: 'Toggle Blip Type' },
+    { name: 'option:barbershop', description: 'Toggle Blip Type' },
+    { name: 'option:vehiclecustoms', description: 'Toggle Blip Type' },
+    { name: 'option:clothingstore', description: 'Toggle Blip Type' },
+    { name: 'option:generalstore', description: 'Toggle Blip Type' },
+    { name: 'option:ammunation', description: 'Toggle Blip Type' },
+    { name: 'option:agility', description: 'Toggle Blip Type' },
+    { name: 'option:drivingschool', description: 'Toggle Blip Type' },
+    { name: 'option:gathering', description: 'Toggle Blip Type' },
+    { name: 'option:mining', description: 'Toggle Blip Type' },
+    { name: 'option:police', description: 'Toggle Blip Type' },
+    { name: 'option:taxi', description: 'Toggle Blip Type' },
+    { name: 'option:mechanic', description: 'Toggle Blip Type' },
+    { name: 'option:crafting', description: 'Toggle Blip Type' },
+    { name: 'option:trucking', description: 'Toggle Blip Type' },
+    { name: 'option:woodcutting', description: 'Toggle Blip Type' },
+    { name: 'option:toolbench', description: 'Toggle Blip Type' },
+    { name: 'option:cookingsource', description: 'Toggle Blip Type' },
+    { name: 'option:foodstand', description: 'Toggle Blip Type' }
+];
+
 const url = 'http://resource/client/html/inventory/index.html';
 let webview;
 
@@ -34,8 +57,6 @@ alt.on('meta:Changed', (key, value) => {
             fetchContacts();
             break;
     }
-
-    loadOptions();
 });
 
 // Show the Dialogue for the Inventory
@@ -54,7 +75,6 @@ export function showDialogue() {
     webview.on('inventory:Use', use);
     webview.on('inventory:Destroy', destroy);
     webview.on('inventory:FetchItems', fetchItems);
-    webview.on('inventory:SwapItem', swapItem);
     webview.on('inventory:Rename', rename);
     webview.on('inventory:Exit', exit);
     webview.on('inventory:FetchStats', fetchStats);
@@ -69,12 +89,8 @@ export function showDialogue() {
     webview.on('inventory:DeleteContact', deleteContact);
     webview.on('option:SetOption', setOption);
     webview.on('option:LoadOptions', loadOptions);
-
+    webview.on('option:Ready', optionReady);
     alt.emit('hud:AdjustHud', true);
-}
-
-function swapItem(heldIndex, dropIndex) {
-    alt.emitServer('inventory:SwapItem', heldIndex, dropIndex);
 }
 
 export function fetchEquipment(value) {
@@ -84,8 +100,6 @@ export function fetchEquipment(value) {
     }
 
     const equipmentArray = JSON.parse(value);
-
-    alt.log('Fetched Equipment');
 
     equipmentArray.forEach((item, index) => {
         if (!item) {
@@ -102,10 +116,10 @@ export function fetchStats(value) {
     if (!value) {
         value = alt.Player.local.getMeta('skills');
     }
+
+    webview.emit('inventory:ClearStats');
+
     const statArray = JSON.parse(value);
-
-    alt.log('Fetched Stats');
-
     Object.keys(statArray).forEach(key => {
         webview.emit(
             'inventory:AddStat',
@@ -122,15 +136,10 @@ export function fetchItems(value) {
         value = alt.Player.local.getMeta('inventory');
     }
 
-    alt.log('Fetched Items');
-
     const itemArray = JSON.parse(value);
     if (!itemArray) return;
     itemArray.forEach((item, index) => {
-        if (!item) {
-            webview.emit('inventory:AddItem', index, null);
-            return;
-        }
+        if (!item) return;
 
         // const [name, index, base, hash, quantity, props] = args;
         webview.emit(
@@ -222,23 +231,30 @@ function setOption(key, value) {
     const cache = alt.LocalStorage.get();
     cache.set(key, value);
     cache.save();
-    loadOptions();
-
-    alt.emit('hud:QueueNotification', `Option: ${key} updated to ${value}`);
+    alt.emit('option:Changed', key, value);
+    alt.emit('hud:QueueNotification', `[Option] ${key} updated to ${value}`);
 }
 
 function loadOptions() {
     const cache = alt.LocalStorage.get();
-
-    if (!webview) {
-        options.forEach(option => {
-            alt.emit('option:Changed', option, cache.get(`option:${option}`));
-        });
-        return;
-    }
-
     options.forEach(option => {
-        alt.emit('option:Changed', option, cache.get(`option:${option}`));
-        webview.emit('option:SetOption', option, cache.get(`option:${option}`));
+        const res = cache.get(option);
+        const value = res === null ? true : res;
+        alt.emit('option:Changed', value);
     });
 }
+
+function optionReady() {
+    const cache = alt.LocalStorage.get();
+    options.forEach(option => {
+        const value = cache.get(option.name);
+        webview.emit(
+            'option:AddCategory',
+            option.name,
+            value,
+            `${option.name.toUpperCase().replace('OPTION:', '')} - ${option.description}`
+        );
+    });
+}
+
+loadOptions();

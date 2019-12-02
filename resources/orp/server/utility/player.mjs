@@ -3,16 +3,20 @@ import * as alt from 'alt';
 import { generateHash } from '../utility/encryption.mjs';
 import { Items, BaseItems } from '../configuration/items.mjs';
 import { Config } from '../configuration/config.mjs';
+import { objectToNull } from '../utility/object.mjs';
+import { spawnVehicle } from '../systems/vehicles.mjs';
+import { quitJob } from '../systems/job.mjs';
+import { fetchNextVehicleID, getCharacterName, modifyRank } from '../cache/cache.mjs';
+import { dropNewItem } from '../systems/inventory.mjs';
+import { doorStates } from '../systems/use.mjs';
+import { getGang } from '../systems/gangs.mjs';
+import { getLevel } from '../systems/xp.mjs';
+
 import * as systemsInteraction from '../systems/interaction.mjs';
 import * as systemsTime from '../systems/time.mjs';
 import * as utilityTime from '../utility/time.mjs';
-import { objectToNull } from '../utility/object.mjs';
+
 import SQL from '../../../postgres-wrapper/database.mjs';
-import { spawnVehicle } from '../systems/vehicles.mjs';
-import { quitJob } from '../systems/job.mjs';
-import { fetchNextVehicleID, getCharacterName } from '../cache/cache.mjs';
-import { dropNewItem } from '../systems/inventory.mjs';
-import { doorStates } from '../systems/use.mjs';
 
 // Load the database handler.
 const db = new SQL();
@@ -55,25 +59,46 @@ export function setupPlayerFunctions(player) {
         db.updatePartialData(id, { [fieldName]: fieldValue }, 'Character', () => {});
     };
 
+    player.setRank = flag => {
+        player.rank = flag;
+        modifyRank(player.pgid, flag);
+        db.updatePartialData(player.accountID, { rank: flag }, 'Account', () => {
+            alt.log(`Updated ${player.pgid} to rank ${flag}`);
+        });
+    };
+
     /**
      * Updates the player's current playing time.
      * Calculated from start time; until now. Then resets it.
      * @memberof player
      */
     player.updatePlayingTime = () => {
-        const minutes = utilityTime.getPlayingTime(player.startTime, Date.now());
-        player.data.playingtime += Math.round(minutes);
+        console.log('Updating Playing Time');
+        if (!player.startTime) {
+            player.startTime = Date.now();
+            return;
+        }
 
-        if (minutes >= 0)
-            player.saveField(player.data.id, 'playingtime', player.data.playingtime);
-
+        const minutesPlayed = utilityTime.getPlayingTime(player.startTime, Date.now());
+        player.data.playingtime += parseInt(Math.round(minutesPlayed));
+        let isAboveThreshold = minutesPlayed >= 1 ? true : false;
         player.startTime = Date.now();
 
-        const points = utilityTime.minutesToUpgradePoints(player.data.playingtime);
-        if (points <= 0) return;
+        if (isAboveThreshold) {
+            const points = utilityTime.minutesToUpgradePoints(player.data.playingtime);
+            player.data.upgradestotal = points;
 
-        player.data.upgradestotal = points;
-        player.saveField(player.data.id, 'upgradestotal', player.data.upgradestotal);
+            // db.updatePartialData(id, { [fieldName]: fieldValue }, 'Character', () => {});
+            db.updatePartialData(
+                player.data.id,
+                {
+                    playingtime: player.data.playingtime,
+                    upgradestotal: player.data.upgradestotal
+                },
+                'Character',
+                () => {}
+            );
+        }
     };
 
     /**
@@ -114,10 +139,16 @@ export function setupPlayerFunctions(player) {
         player.emitMeta('queueNotification', msg);
     };
 
+    player.saveDimension = doorID => {
+        player.dimension = doorID;
+        player.data.dimension = doorID;
+        player.saveField(player.data.id, 'dimension', doorID);
+    };
+
     // ====================================
     // Weather & Time
     player.updateTime = () => {
-        systemsTime.setTimeForNewPlayer(player);
+        systemsTime.updatePlayerTime(player);
     };
 
     /**
@@ -166,55 +197,11 @@ export function setupPlayerFunctions(player) {
     };
 
     /**
-     *  Show the Registration Dialogue
-     * @memberof player
-     * @param {vector3} regCamCoord Where to base the registration camera.
-     * @param {vector3} regCamPointAtCoord Where to point the camera.
-     */
-    player.showRegisterDialogue = (regCamCoord, regCamPointAtCoord) => {
-        alt.emitClient(player, 'register:ShowDialogue', regCamCoord, regCamPointAtCoord);
-    };
-
-    /**
      *  Remove pedestrian blood.
      * @memberof player
      */
     player.clearBlood = () => {
         alt.emitClient(player, 'respawn:ClearPedBloodDamage');
-    };
-
-    /**
-     *  Display error message to registration dialogue.
-     * @memberof player
-     * @param {string} msg Error to display.
-     */
-    player.showRegisterEventError = msg => {
-        alt.emitClient(player, 'register:EmitEventError', msg);
-    };
-
-    /**
-     *  Display success message to registration dialogue.
-     * @memberof player
-     * @param {string} msg Message to display.
-     */
-    player.showRegisterEventSuccess = msg => {
-        alt.emitClient(player, 'register:EmitEventSuccess', msg);
-    };
-
-    /**
-     *  Switch registration over to login form.
-     * @memberof player
-     */
-    player.showRegisterLogin = () => {
-        alt.emitClient(player, 'register:ShowLogin');
-    };
-
-    /**
-     *  Close the registration dialogue.
-     * @memberof player
-     */
-    player.closeRegisterDialogue = () => {
-        alt.emitClient(player, 'register:CloseDialogue');
     };
 
     /**
@@ -284,6 +271,7 @@ export function setupPlayerFunctions(player) {
         player.clearBlood();
         player.setHealth(200);
         player.setArmour(0);
+        player.hasDied = false;
         player.revivePos = undefined;
         player.reviveTime = undefined;
         player.reviving = false;
@@ -297,7 +285,7 @@ export function setupPlayerFunctions(player) {
     };
 
     /**
-     *  Set the user's health.
+     * Set the user's health.
      * @memberof player
      * @param {number} amount The amount to set the user's health.
      */
@@ -327,36 +315,23 @@ export function setupPlayerFunctions(player) {
             player.lastLocation = player.pos;
         }
 
+        player.dimension = parseInt(player.data.id);
         alt.emitClient(player, 'face:ShowDialogue');
     };
 
-    player.applyFace = valueJSON => {
-        const data = JSON.parse(valueJSON);
-
-        if (data.Sex.value === 0) {
+    player.applyFace = () => {
+        if (!player.data.sexgroup) return;
+        const sexGroup = JSON.parse(player.data.sexgroup);
+        if (sexGroup[0].value === 0) {
             player.model = 'mp_f_freemode_01';
         } else {
             player.model = 'mp_m_freemode_01';
         }
 
-        player.emitMeta('face', valueJSON);
-    };
-
-    player.saveFace = (valueJSON, isBarbershop) => {
-        const data = JSON.parse(valueJSON);
-
-        if (!isBarbershop) {
-            player.model = data.Sex.value === 0 ? 'mp_f_freemode_01' : 'mp_m_freemode_01';
-            if (player.isNewPlayer) {
-                player.addStarterItems();
-                player.isNewPlayer = false;
-            }
-        }
-
-        player.data.face = valueJSON;
-        player.saveField(player.data.id, 'face', valueJSON);
-        player.emitMeta('face', valueJSON);
-        player.syncInventory(true);
+        Object.keys(player.data).forEach(key => {
+            if (!key.includes('group')) return;
+            player.emitMeta(key, player.data[key]);
+        });
     };
 
     // ====================================
@@ -493,8 +468,8 @@ export function setupPlayerFunctions(player) {
 
     // ====================================
     // Load Blip for client.
-    player.createBlip = (pos, blipType, blipColor, labelName) => {
-        alt.emitClient(player, 'blip:CreateBlip', pos, blipType, blipColor, labelName);
+    player.createBlip = (category, pos, sprite, colour, label) => {
+        alt.emitClient(player, 'blip:CreateBlip', category, pos, sprite, colour, label);
     };
 
     // ====================================
@@ -542,13 +517,10 @@ export function setupPlayerFunctions(player) {
     /**
      * Set / Save the player's Roleplay Info
      */
-    player.saveRoleplayInfo = value => {
-        player.data.name = value.name;
-        player.data.dob = `${value.dob}`;
+    player.saveRoleplayInfo = name => {
+        player.data.name = name;
         player.setSyncedMeta('name', player.data.name);
-        player.setSyncedMeta('dob', player.data.dob);
         player.saveField(player.data.id, 'name', player.data.name);
-        player.saveField(player.data.id, 'dob', player.data.dob);
     };
 
     // =================================
@@ -560,22 +532,27 @@ export function setupPlayerFunctions(player) {
         props = {},
         skipStackable = false,
         skipSave = false,
-        name = undefined
+        name = undefined,
+        icon = undefined,
+        keyOverride = undefined
     ) => {
         const item = Items[key];
-        const base = BaseItems[Items[key].base];
-
         if (!item) {
             console.log('Item does not exist.');
             return false;
         }
 
+        const base = BaseItems[Items[key].base];
         if (!base) {
             console.log('Base item does not exist.');
             return false;
         }
 
         const clonedItem = { ...item };
+        if (keyOverride) {
+            clonedItem.key = keyOverride;
+        }
+
         if (name) {
             clonedItem.name = name;
         }
@@ -595,6 +572,9 @@ export function setupPlayerFunctions(player) {
         clonedItem.props = props;
         clonedItem.quantity = quantity;
         clonedItem.hash = generateHash(JSON.stringify(clonedItem));
+        if (icon) {
+            clonedItem.icon = icon;
+        }
 
         const nullIndex = player.inventory.findIndex(item => !item);
         if (nullIndex >= 28) {
@@ -660,6 +640,14 @@ export function setupPlayerFunctions(player) {
         return true;
     };
 
+    player.subItemByHash = hash => {
+        const index = player.inventory.findIndex(item => item && item.hash === hash);
+        if (index <= -1) return false;
+        player.inventory[index] = null;
+        player.saveInventory();
+        return true;
+    };
+
     player.hasQuantityOfItem = (key, quantity) => {
         const indexes = [];
         const entries = player.inventory.entries();
@@ -709,6 +697,7 @@ export function setupPlayerFunctions(player) {
     };
 
     player.dropItemsOnDeath = () => {
+        if (!player.inventory) return;
         player.inventory.forEach((item, index) => {
             if (!item) return;
             if (item.base.includes('weapon') || item.base.includes('unrefined')) {
@@ -797,6 +786,23 @@ export function setupPlayerFunctions(player) {
             inventoryItem = objectToNull(inventoryItem);
         }
 
+        // Going in to hand.
+        if (inventoryItem.props && inventoryItem.props.lvl) {
+            const skills = JSON.parse(player.data.skills);
+            if (inventoryItem.props.lvl.skill) {
+                const skill = inventoryItem.props.lvl.skill;
+                const level = getLevel(skills[skill].xp);
+
+                if (level < inventoryItem.props.lvl.requirement) {
+                    player.notify(
+                        `You do not have level ${inventoryItem.props.lvl.requirement} ${skill}.`
+                    );
+                    player.syncInventory();
+                    return;
+                }
+            }
+        }
+
         player.equipment[equipmentIndex] = inventoryItem;
         player.inventory[itemIndex] = equippedItem;
         player.saveInventory();
@@ -814,7 +820,7 @@ export function setupPlayerFunctions(player) {
         if (
             player.addItem(
                 equippedItem.key,
-                1,
+                equippedItem.quantity,
                 equippedItem.props,
                 false,
                 false,
@@ -837,34 +843,6 @@ export function setupPlayerFunctions(player) {
         return false;
     };
 
-    player.swapItems = (heldIndex, dropIndex) => {
-        let heldItem = { ...player.inventory[heldIndex] };
-        let dropItem = { ...player.inventory[dropIndex] };
-        if (heldIndex === dropIndex) return;
-
-        if (heldItem) {
-            heldItem = objectToNull(heldItem);
-        }
-
-        if (dropItem) {
-            dropItem = objectToNull(dropItem);
-        }
-
-        if (heldItem && dropItem) {
-            const heldBase = BaseItems[heldItem.base];
-            if (heldItem.name === dropItem.name && heldBase.abilities.stack) {
-                player.inventory[dropIndex].quantity += parseInt(heldItem.quantity);
-                player.inventory[heldIndex] = null;
-                player.saveInventory();
-                return;
-            }
-        }
-
-        player.inventory[heldIndex] = dropItem;
-        player.inventory[dropIndex] = heldItem;
-        player.saveInventory();
-    };
-
     player.splitItem = index => {
         if (player.splitting) return;
         player.splitting = true;
@@ -884,9 +862,15 @@ export function setupPlayerFunctions(player) {
         const item = { ...player.inventory[index] };
         const split = Math.floor(parseInt(item.quantity) / 2);
         const remainder = parseInt(item.quantity) - split;
-        const nullIndexes = player.inventory.filter(item => !item);
-        if (nullIndexes.length <= 1) {
-            player.send('{FF0000} No room for item split.');
+        let nullIndexes = 0;
+        player.inventory.forEach(item => {
+            if (!item) {
+                nullIndexes += 1;
+            }
+        });
+
+        if (nullIndexes <= 1) {
+            player.notify('No room to split item.');
             player.splitting = false;
             return false;
         }
@@ -908,6 +892,18 @@ export function setupPlayerFunctions(player) {
     player.setWeapon = hash => {
         player.removeAllWeapons();
         player.giveWeapon(hash, 999, true);
+    };
+
+    player.getNullSlots = () => {
+        let count = 0;
+        player.inventory.forEach((item, index) => {
+            if (index >= 28) return;
+            if (!item) {
+                count += 1;
+                return;
+            }
+        });
+        return count;
     };
 
     player.hasItem = base => {
@@ -985,10 +981,10 @@ export function setupPlayerFunctions(player) {
         player.equipment[10] = pants;
         player.equipment[13] = shoes;
 
-        player.addItem('pickaxe1', 1, Items.pickaxe1.props);
-        player.addItem('hammer1', 1, Items.hammer1.props);
-        player.addItem('axe1', 1, Items.axe1.props);
-        player.addItem('fishingrod1', 1, Items.fishingrod1.props);
+        player.addItem('pickaxe', 1, Items.pickaxe.props);
+        player.addItem('hammer', 1, Items.hammer.props);
+        player.addItem('axe', 1, Items.axe.props);
+        player.addItem('fishingrod', 1, Items.fishingrod.props);
     };
 
     // =================================
@@ -1227,6 +1223,27 @@ export function setupPlayerFunctions(player) {
             'extraBusinessSlots',
             player.data.extraBusinessSlots
         );
+    };
+    // =============================
+    player.syncGang = () => {
+        player.emitMeta('gang:ID', player.data.gang);
+
+        if (player.data.gang !== -1) {
+            const info = getGang(player);
+            if (info === undefined || info === null) {
+                player.saveField(player.data.id, 'gang', -1);
+                player.emitMeta('gang:Info', null);
+                return;
+            }
+
+            player.emitMeta('gang:Info', JSON.stringify(info));
+        } else {
+            player.emitMeta('gang:Info', null);
+        }
+    };
+
+    player.saveGangID = () => {
+        player.saveField(player.data.id, 'gang', player.data.gang);
     };
 }
 

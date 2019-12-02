@@ -7,34 +7,75 @@ export const Config = {
     maxDoRange: 15,
     maxOocRange: 15,
     // Spawn Location / Camera Point
-    registerCamPoint: {
-        x: -443.31427001953125,
-        y: 1059.4945068359375,
-        z: 327.6732177734375
+    characterPoint: {
+        x: 2827.42333984375,
+        y: -729.071044921875,
+        z: 1.9250786304473877
+    },
+    characterCamPoint: {
+        x: 2826.87939453125,
+        y: -723.9521484375,
+        z: 1.98758864402771
     },
     defaultSpawnPoint: {
-        x: 813,
-        y: -279,
-        z: 66
+        x: -725.7460327148438,
+        y: -282.2967224121094,
+        z: 36.959503173828125
     },
     // Player Data
-    defaultPlayerCash: 100.0, // Starting Cash
-    defaultPlayerBank: 1000.0, // Starting Bank
+    defaultPlayerCash: 500.0, // Starting Cash
+    defaultPlayerBank: 500.0, // Starting Bank
     defaultPlayerReviveTime: 1000 * 20, // 20 Seconds
-    defaultPlayerMaxVehicles: 2, // Max Vehicles Per Player
+    defaultPlayerMaxVehicles: 3, // Max Vehicles Per Player
     defaultPlayerPaycheck: 40.0, // Every 'timePaycheckTime' minutes they recieve $40.00. $480/h.
     // Timers
     // - Player
     timePlayingTime: 60000 * 5, // How much time before we save player playing time.
-    timePlayerSaveTime: 60000 * 7, // How many minutes before we save all player data.
+    timePlayerSaveTime: 60000 * 2, // How many minutes before we save all player data.
     timePaycheckTime: 60000 * 5, // Every 5 Minutes
     timeRefreshContactsTime: 60000, // Every 1 Minute; Refresh Player Contacts
+    timeCookingTime: 10000,
     // - Vehicle
     vehicleSaveTime: 60000 * 5, // 5 Minutes
-    vehicleBaseFuel: 100, // Increase this to visit the pump less often.
+    vehicleBaseFuel: 200, // Increase this to visit the pump less often.
     vehicleFuelTime: 1000 * 10,
+    vehicleRepairTime: 1000 * 10,
     // Hospital
-    hospitalPctFee: 0.02 // Percentage fee for hospital.
+    hospitalPctFee: 0.02, // Percentage fee for hospital.
+    // Weather
+    weatherCycleTime: 60000 * 5, // 5 Minutes
+    weatherCycle: [
+        0, // Extra sunny
+        0, // Extra sunny
+        0, // Extra sunny
+        0, // Extra sunny
+        0, // Extra sunny
+        0, // Extra sunny
+        0, // Extra sunny
+        1, // Clear
+        2, // Clouds
+        2, // Clouds
+        4, // Foggy
+        5, // Overcast
+        8, // Light Rain
+        6, // Rain
+        6, // Rain
+        7, // Thunder
+        7, // Thunder
+        6, // Rain
+        8, // Light Rain
+        5, // Overcast
+        2, // Clouds
+        1, // Clear
+        1 // Clear
+    ],
+    // Time
+    startHour: 6, // What time do we start the server at?
+    minutesPerMinute: 5, // Used to set the Time Scale of the server for the minute. 1 Minute = 30 Minutes.
+    hoursPerSixtyMinutes: 1, // Used to set the Time Scale of the server for the hour.
+    // Time Before Turf is Claimed Again
+    nextTurfCheckTime: 60000, // 1 Minute
+    turfHighestWaitTime: 35 // 10 Minutes + Random up to This Amount = Next Claim Time
 };
 
 alt.on('orp:SetConfig', jsonString => {

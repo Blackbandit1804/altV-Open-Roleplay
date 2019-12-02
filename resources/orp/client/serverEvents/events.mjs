@@ -1,7 +1,5 @@
 import * as alt from 'alt';
-
-// Registration
-import * as panelsRegistration from '/client/panels/registration.mjs';
+import * as native from 'natives';
 
 // Blips
 import * as blipsBlipHelper from '/client/blips/bliphelper.mjs';
@@ -25,6 +23,7 @@ import * as panelsCharacter from '/client/panels/character.mjs';
 import * as panelsMdc from '/client/panels/mdc.mjs';
 import * as panelsHud from '/client/panels/hud.mjs';
 import * as panelsVehicleVendor from '/client/panels/vehiclevendor.mjs';
+import * as panelsCharacterSelect from '/client/panels/characterselect.mjs';
 
 import * as meta from '/client/meta/meta.mjs';
 
@@ -40,27 +39,13 @@ alt.log('Loaded: client->serverEvents->events.mjs');
 // Importing each individual file this way; allows us
 // to easily import a majority of code without importing
 // nearly as many files in various other places.
-// =============================================
-// REGISTRATION / LOGIN
-// Called when the player first joins the server,
-// displays the login camera to the user.
-// Takes two parameters: (regCamCoord, regCamPointAtCoord)
-alt.onServer('register:ShowDialogue', panelsRegistration.showDialogue);
-
-// Called when there's an error/alert in the registration.
-// Params: msg
-alt.onServer('register:EmitEventError', panelsRegistration.showError);
-alt.onServer('register:EmitEventSuccess', panelsRegistration.showSuccess);
-// Params: NONE
-alt.onServer('register:ShowLogin', panelsRegistration.showLogin);
-
-// Finish the login; and disable un-necessary events.
-alt.onServer('register:CloseDialogue', panelsRegistration.closeDialogue);
-
+// ============================================
 // =======================================================
 // PLAYER RESPAWN
 // Reset the characters blood
-alt.onServer('respawn:ClearPedBloodDamage', panelsCharacter.clearPedBloodDamage);
+alt.onServer('respawn:ClearPedBloodDamage', () => {
+    native.clearPedBloodDamage(alt.Player.local.scriptID);
+});
 
 // =======================================================
 // CHARACTER FACE CUSTOMIZER
@@ -130,6 +115,8 @@ alt.onServer('vehicle:StartEngine', systemsVehicles.startEngine);
 alt.onServer('vehicle:SoundHorn', systemsVehicles.soundHorn);
 alt.onServer('vehicle:SetIntoVehicle', systemsVehicles.setIntoVehicle);
 alt.onServer('vehicle:TrackVehicle', systemsVehicles.trackVehicle);
+alt.onServer('vehicle:ForceEngineOn', systemsVehicles.forceEngineOn);
+alt.onServer('vehicle:KillEngine', systemsVehicles.killEngine);
 
 // =======================================================
 // Chat
@@ -148,3 +135,7 @@ alt.onServer('meta:Emit', meta.emit);
 // =======================================================
 // Vehicle Vendors
 alt.onServer('vehiclevendor:ShowDialogue', panelsVehicleVendor.showDialogue);
+
+// =======================================================
+// Character Select
+alt.onServer('character:Select', panelsCharacterSelect.showDialogue);

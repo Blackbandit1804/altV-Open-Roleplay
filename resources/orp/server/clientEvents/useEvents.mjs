@@ -19,7 +19,16 @@ const events = {
     'use:FriskPlayer': systemsUse.friskPlayer,
     'use:CoffeeMachine': systemsUse.coffeeMachine,
     'use:HospitalBed': systemsUse.hospitalBed,
-    'use:FireExtinguisher': systemsUse.fireExtinguisher
+    'use:FireExtinguisher': systemsUse.fireExtinguisher,
+    'use:UseDynamicDoor': systemsUse.useDynamicDoor,
+    'use:LockDynamicDoor': systemsUse.lockDynamicDoor,
+    'use:ExitDynamicDoor': systemsUse.exitDynamicDoor,
+    'use:PurchaseDynamicDoor': systemsUse.purchaseDynamicDoor,
+    'use:CandyDispenser': systemsUse.candyDispenser,
+    'use:HotdogDispenser': systemsUse.hotdogDispenser,
+    'use:WaterDispenser': systemsUse.waterDispenser,
+    'use:FruitDispenser': systemsUse.fruitDispenser,
+    'use:BurgerDispenser': systemsUse.burgerDispenser
 };
 
 Object.keys(events).forEach(key => {

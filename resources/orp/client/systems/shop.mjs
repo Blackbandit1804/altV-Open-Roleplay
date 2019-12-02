@@ -2,7 +2,10 @@ import * as alt from 'alt';
 import * as native from 'natives';
 import * as panelsClothing from '/client/panels/clothing.mjs';
 import * as panelsVehicleCustom from '/client/panels/vehiclecustom.mjs';
-import * as panelsBarbershop from '/client/panels/barbershop.mjs';
+import * as panelsGeneralStore from '/client/panels/generalstore.mjs';
+import * as panelsCrafting from '/client/panels/crafting.mjs';
+import * as panelsCharacter from '/client/panels/character.mjs';
+import * as panelsAtm from '/client/panels/atm.mjs';
 import { createBlip } from '/client/blips/bliphelper.mjs';
 import { syncDoors } from '/client/systems/doors.mjs';
 
@@ -10,9 +13,10 @@ alt.log('Loaded: client->systems->shop.mjs');
 
 const shops = [
     {
+        category: 'barbershop',
         type: 'Barbershop',
         sprite: 71,
-        color: 17,
+        color: 53,
         ids: [
             //
             165377,
@@ -23,13 +27,31 @@ const shops = [
             140545,
             180225
         ],
-        func: panelsBarbershop.showDialogue,
-        message: `Press ~INPUT_CONTEXT~ to change your hairstyle.`
+        func: panelsCharacter.showAsBarbershop,
+        message: `Press ~INPUT_CONTEXT~ to change your eyes, hair, or makeup.`
     },
     {
+        category: 'tattooshop',
+        type: 'Tattooshop',
+        sprite: 75,
+        color: 53,
+        ids: [
+            //
+            171521,
+            176897,
+            180737,
+            199425,
+            140033,
+            251137
+        ],
+        func: panelsCharacter.showAsTattooShop,
+        message: `Press ~INPUT_CONTEXT~ to browse tattoo options.`
+    },
+    {
+        category: 'vehiclecustoms',
         type: 'Vehicle Customs Shop',
         sprite: 402,
-        color: 77,
+        color: 53,
         ids: [
             //
             196609,
@@ -44,9 +66,10 @@ const shops = [
         message: `Press ~INPUT_CONTEXT~ to edit your vehicle.`
     },
     {
+        category: 'clothingstore',
         type: 'Clothing Store',
         sprite: 73,
-        color: 8,
+        color: 53,
         ids: [
             198145,
             165633,
@@ -65,6 +88,66 @@ const shops = [
         ],
         func: panelsClothing.showDialogue,
         message: `Press ~INPUT_CONTEXT~ to shop for clothes.`
+    },
+    {
+        category: 'generalstore',
+        type: 'General Store',
+        sprite: 52,
+        color: 53,
+        ids: [
+            139777,
+            178945,
+            176641,
+            177153,
+            204801,
+            200449,
+            199169,
+            184065,
+            154113,
+            170753,
+            168449,
+            175105,
+            203265,
+            200705,
+            196865,
+            198401,
+            155649,
+            167937,
+            175873,
+            183809
+        ],
+        func: panelsGeneralStore.showDialogue,
+        message: `Press ~INPUT_CONTEXT~ to shop for general goods.`
+    },
+    {
+        category: 'ammunation',
+        type: 'Gun Crafting Point',
+        sprite: 119,
+        color: 6,
+        ids: [
+            164609,
+            168193,
+            153857,
+            176385,
+            137729,
+            175617,
+            140289,
+            178689,
+            200961,
+            180481,
+            248065
+        ],
+        func: panelsCrafting.weaponryCrafting,
+        message: `Press ~INPUT_CONTEXT~ to access this crafting point.`
+    },
+    {
+        category: 'bank',
+        type: 'Bank',
+        sprite: 108,
+        color: 53,
+        ids: [141057, 165121, 137985, 174849, 179969, 234241, 139265],
+        func: panelsAtm.showDialogue,
+        message: `Press ~INPUT_CONTEXT~ to access funds.`
     }
 ];
 
@@ -85,7 +168,7 @@ function startShopInterval(key, value) {
         shops.forEach(shop => {
             shop.ids.forEach(id => {
                 let [_null, _shopPos] = native.getInteriorInfo(id, undefined, undefined);
-                createBlip(_shopPos, shop.sprite, shop.color, shop.type);
+                createBlip(shop.category, _shopPos, shop.sprite, shop.color, shop.type);
             });
         });
     }
@@ -97,6 +180,7 @@ function startShopInterval(key, value) {
 // Has to have special case for vehicle.
 function shopInterval() {
     if (alt.Player.local.getMeta('arrest')) return;
+    if (alt.Player.local.getMeta('viewOpen')) return;
 
     // Get the current interior of the user.
     const currInterior = native.getInteriorFromEntity(alt.Player.local.scriptID);
@@ -147,6 +231,7 @@ function clearShop() {
 }
 
 function shopKey() {
+    if (alt.Player.local.getMeta('viewOpen')) return;
     if (currentShop === undefined) return;
     native.beginTextCommandDisplayHelp('STRING');
     native.addTextComponentSubstringPlayerName(currentShop.message);

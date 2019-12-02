@@ -6,6 +6,8 @@ import { addXP } from '../systems/skills.mjs';
 import { Items, BaseItems } from '../configuration/items.mjs';
 import { generateHash } from '../utility/encryption.mjs';
 import { setupVehicleFunctions } from '../utility/vehicle.mjs';
+import { getRandomLoot } from '../systems/loot.mjs';
+import { getLevel } from '../systems/xp.mjs';
 
 const Debug = true;
 
@@ -35,7 +37,8 @@ export const modifiers = {
     CLEAR_PROPS: 1024,
     NO_DAMAGE_VEHICLE: 2048,
     NULL_PLAYER: 4096,
-    MAX: 8192
+    IS_TRAILER: 16384,
+    MAX: 16384
 };
 
 export const restrictions = {
@@ -103,12 +106,14 @@ export class Objective {
      * Set an array of rewards to give.
      * [
      * { type: 'item', prop: 'itemKey', quantity: 1 },
-     * { type: 'xp', prop: 'agility', quantity: 25 }
+     * { type: 'xp', prop: 'agility', quantity: 25 },
+     * { type:'table', prop: 'fish', skill: 'fishing', quantity: 1 }
      * ]
      * @param arrayOfRewards
      */
-    setRewards(arrayOfRewards) {
+    setRewards(arrayOfRewards, skipXP = false) {
         this.rewards = arrayOfRewards;
+        this.skipXP = skipXP;
     }
 
     setSoundEveryProgressTick(soundName) {
@@ -238,11 +243,12 @@ export class Objective {
      * @param type
      * @param pos
      */
-    setVehicle(type, pos, rot = 0) {
+    setVehicle(type, pos, rot = 0, warpIntoVehicle = true) {
         this.veh = {
             type,
             pos,
-            rot
+            rot,
+            warpIntoVehicle
         };
     }
 
@@ -415,7 +421,11 @@ export class Objective {
         }
 
         setupVehicleFunctions(vehicle, false);
-        alt.emitClient(player, 'vehicle:SetIntoVehicle', vehicle);
+        if (this.veh.warpIntoVehicle) {
+            alt.emitClient(player, 'vehicle:SetIntoVehicle', vehicle);
+        }
+
+        alt.emitClient(player, 'vehicle:Rotate', vehicle, this.veh.rot);
     }
 
     giveRewards(player) {
@@ -429,12 +439,69 @@ export class Objective {
             if (reward && reward.type === 'item') return reward;
         });
 
+        const tableRewards = this.rewards.filter(reward => {
+            if (reward && reward.type === 'table') return reward;
+        });
+
         xpRewards.forEach(reward => {
             this.rewardXP(player, reward.prop, reward.quantity);
         });
 
         itemRewards.forEach(reward => {
             this.rewardItem(player, reward);
+        });
+
+        tableRewards.forEach(reward => {
+            //  type:'table', prop: 'fish', skill: 'fishing', quantity: 1, givexp: true }
+            if (!Items[reward.prop]) return;
+            const skills = JSON.parse(player.data.skills);
+            const baseItem = BaseItems[Items[reward.prop].base];
+            if (baseItem.abilities.stack) {
+                const itemLoot = getRandomLoot(
+                    reward.prop,
+                    getLevel(skills[reward.skill].xp)
+                );
+                if (
+                    player.addItem(
+                        Items[reward.prop].key,
+                        reward.quantity,
+                        { xp: itemLoot.xp, lvl: itemLoot.lvl },
+                        false,
+                        false,
+                        itemLoot.name
+                    )
+                ) {
+                    player.notify(`${itemLoot.name} was added to inventory.`);
+                }
+
+                if (itemLoot.givexp) {
+                    const totalXP = itemLoot.xp * reward.quantity;
+                    this.rewardXP(player, reward.skill, totalXP);
+                }
+            } else {
+                for (let i = 0; i < reward.quantity; i++) {
+                    const itemLoot = getRandomLoot(
+                        reward.prop,
+                        getLevel(skills[reward.skill].xp)
+                    );
+                    if (
+                        player.addItem(
+                            Items[reward.prop].key,
+                            1,
+                            { xp: itemLoot.xp, lvl: itemLoot.lvl },
+                            false,
+                            false,
+                            itemLoot.name
+                        )
+                    ) {
+                        player.notify(`${itemLoot.name} was added to inventory.`);
+                    }
+
+                    if (itemLoot.givexp) {
+                        this.rewardXP(player, reward.skill, itemLoot.xp);
+                    }
+                }
+            }
         });
     }
 
@@ -446,12 +513,20 @@ export class Objective {
         if (!Items[reward.prop]) return;
         const baseItem = BaseItems[Items[reward.prop].base];
         if (baseItem.abilities.stack) {
-            player.addItem(Items[reward.prop].key, reward.quantity);
-            player.send(`${Items[reward.prop].name} was added to your inventory.`);
+            if (
+                player.addItem(
+                    Items[reward.prop].key,
+                    reward.quantity,
+                    Items[reward.prop].props
+                )
+            ) {
+                player.notify(`${Items[reward.prop].name} was added to inventory.`);
+            }
         } else {
             for (let i = 0; i < reward.quantity; i++) {
-                player.addItem(Items[reward.prop].key, 1);
-                player.send(`${Items[reward.prop].name} was added to your inventory.`);
+                if (player.addItem(Items[reward.prop].key, 1, Items[reward.prop].props)) {
+                    player.notify(`${Items[reward.prop].name} was added to inventory.`);
+                }
             }
         }
     }
@@ -474,6 +549,7 @@ export class Objective {
         if (!this.checkMash(player)) return false;
         if (!this.checkWait(player)) return false;
         if (!this.checkMinigame(player, hash)) return false;
+        if (!this.checkTrailer(player)) return false;
 
         // Check the player objective type
         // When the user has a 'target' type.
@@ -519,10 +595,29 @@ export class Objective {
         return true;
     }
 
+    checkTrailer(player) {
+        if (isFlagged(this.flags, modifiers.IS_TRAILER)) {
+            if (!player.vehicle) {
+                return false;
+            }
+
+            const trailer = player.vehicles.find(x => x.job !== undefined);
+            if (!trailer) {
+                return false;
+            }
+
+            const dist = distance(trailer.pos, this.pos);
+            if (dist > this.range * 2) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     checkIfVehicleDamaged(player, vehicle) {
         if (isFlagged(this.flags, modifiers.NO_DAMAGE_VEHICLE)) {
             if (vehicle.engineHealth < player.job.vehicleHealth) {
-                player.send(`You failed to keep your vehicle in good health.`);
+                player.notify(`Failed Job! Vehicle was too damaged.`);
                 quitJob(player, false, true);
                 return false;
             }
@@ -711,8 +806,9 @@ export class Job {
         if (!this.uniform) return;
         if (!Items[this.uniform]) return;
         if (player.hasItem(Items[this.uniform].key)) return;
-        player.addItem(Items[this.uniform].key, 1, Items[this.uniform].props);
-        player.send(`${Items[this.uniform].name} was added to your inventory.`);
+        if (player.addItem(Items[this.uniform].key, 1, Items[this.uniform].props)) {
+            player.notify(`${Items[this.uniform].name} was added to your inventory.`);
+        }
     }
 
     /**
@@ -757,15 +853,13 @@ export class Job {
 
             if (this.items[i].hasItem && !valid) {
                 allValid = false;
-                player.send('You are restricted from doing this job.');
-                player.send(`You don't have {FF0000}${this.items[i].key}{FFFFFF}.`);
+                player.notify(`Issue: You don't have ${this.items[i].key}.`);
                 break;
             }
 
             if (!this.items[i].hasItem && valid) {
                 allValid = false;
-                player.send('You are restricted from doing this job.');
-                player.send(`You already have a {FF0000}${this.items[i].key}{FFFFFF}.`);
+                player.notify(`Issue: You already have a ${this.items[i].key}.`);
                 break;
             }
         }
@@ -782,8 +876,8 @@ export class Job {
             if (skills[restriction.skill.toLowerCase()].xp < restriction.xp) {
                 valid = false;
                 quitJob(player, false, true);
-                player.send(
-                    `You do not have a high enough ${restriction.skill} for this job.`
+                player.notify(
+                    `You don't have a high enough ${restriction.skill.toUpperCase()} level for this job.`
                 );
                 return;
             }
@@ -853,11 +947,15 @@ export class Job {
 
             if (this.objectives[0].type === objectives.WAIT) {
                 if (this.objectives[0].useSectorWaitTime !== -1) {
-                    this.objectives[0].modifiedWaitTime =
-                        Date.now() +
-                        player.sector.seed.getNumber(
-                            this.objectives[0].useSectorWaitTime
-                        );
+                    let randomValue = player.sector.seed.getNumber(
+                        this.objectives[0].useSectorWaitTime
+                    );
+
+                    if (randomValue < 5000) {
+                        randomValue = 5000;
+                    }
+
+                    this.objectives[0].modifiedWaitTime = Date.now() + randomValue;
                 } else {
                     this.objectives[0].modifiedWaitTime =
                         Date.now() + this.objectives[0].waitTime;
@@ -986,7 +1084,7 @@ export function checkRestrictions(player) {
     if (player.job.restrictions <= 0) return;
     if (isFlagged(player.job.restrictions, restrictions.NO_VEHICLES)) {
         if (player.vehicle) {
-            player.send('Failed; no vehicles allowed.');
+            player.notify('Failed! No Vehicles Allowed.');
             quitJob(player, false, true);
             return;
         }
@@ -994,7 +1092,7 @@ export function checkRestrictions(player) {
 
     if (isFlagged(player.job.restrictions, restrictions.TIME_LIMIT)) {
         if (Date.now() > this.end) {
-            player.send('You have exhausted your time limit.');
+            player.notify('Failed! Time limit has been exhausted.');
             quitJob(player, false, true);
             return;
         }
@@ -1003,7 +1101,7 @@ export function checkRestrictions(player) {
     // Dieing Restriction
     if (isFlagged(player.job.restrictions, restrictions.NO_DIEING)) {
         if (player.hasDied) {
-            player.send('This job does not allow dieing; you have failed.');
+            player.notify('Failed! You have died.');
             quitJob(player, false, true);
             return;
         }
@@ -1012,7 +1110,7 @@ export function checkRestrictions(player) {
     // Weapon Restriction
     if (isFlagged(player.job.restrictions, restrictions.NO_WEAPONS)) {
         if (player.equipment[11] && player.equipment[11].base === 'weapon') {
-            player.send('This job does not allow weapons.');
+            player.notify('Failed! This job does not allow any weapons.');
             quitJob(player, false, true);
             return;
         }
@@ -1037,7 +1135,7 @@ export function quitTarget(player) {
     const employee = player.jobber.employee;
     const fare = player.jobber.fare;
     const isObjectiveFare = player.jobber.objectiveFare;
-    player.send('You have cancelled your request.');
+    player.notify('You have cancelled your request.');
 
     // Employee doesn't exist; don't pay.
     if (!employee) {
@@ -1072,6 +1170,8 @@ export function quitTarget(player) {
 }
 
 export function quitJob(player, loggingOut = false, playFailSound = false) {
+    if (!player.data) return;
+    if (!player.vehicles) return;
     if (player.vehicles.length >= 1) {
         let nonJobVehicles = player.vehicles.filter(x => x.job === undefined);
         let jobVehicles = player.vehicles.filter(x => x.job !== undefined);

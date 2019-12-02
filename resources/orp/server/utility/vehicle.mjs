@@ -6,6 +6,16 @@ import { Config } from '../configuration/config.mjs';
 // Load the database handler.
 const db = new SQL();
 
+const notVehicles = [
+    'bmx',
+    'cruiser',
+    'fixter',
+    'scorcher',
+    'tribike',
+    'tribike2',
+    'tribike3'
+];
+
 export function setupVehicleFunctions(vehicle, isSaveable = true) {
     // ======================================
     // Saving Functionality
@@ -61,6 +71,11 @@ export function setupVehicleFunctions(vehicle, isSaveable = true) {
             vehicle.syncCustom();
         };
 
+        vehicle.saveDimension = number => {
+            vehicle.data.dimension = number;
+            vehicle.saveField(vehicle.data.id, 'dimension', number);
+        };
+
         vehicle.syncCustom = () => {
             if (!vehicle.data.customization) return;
             let mods = JSON.parse(vehicle.data.customization);
@@ -69,12 +84,17 @@ export function setupVehicleFunctions(vehicle, isSaveable = true) {
                     vehicle.modKit = 1;
                     let index = parseInt(key);
                     let value = parseInt(mods[key]) + 1;
-                    try {
-                        vehicle.setMod(index, value);
-                    } catch (e) {
-                        console.log(
-                            `Mod: ${index} could not be applied with value ${value}`
-                        );
+
+                    if (index !== 23) {
+                        try {
+                            vehicle.setMod(index, value);
+                        } catch (e) {
+                            console.log(
+                                `Mod: ${index} could not be applied with value ${value}`
+                            );
+                        }
+                    } else {
+                        vehicle.setSyncedMeta('vehicleWheels', value);
                     }
                     return;
                 }
@@ -123,6 +143,15 @@ export function setupVehicleFunctions(vehicle, isSaveable = true) {
         alt.emitClient(player, 'vehicle:ToggleDoor', vehicle, id, vehicle.doorStates[id]);
     };
 
+    const included = notVehicles.find(veh => {
+        const hash = alt.hash(veh);
+        if (hash === vehicle.model) return veh;
+    });
+
+    if (included) {
+        return;
+    }
+
     vehicle.syncFuel = () => {
         const currentFuel = vehicle.fuel;
 
@@ -139,6 +168,7 @@ export function setupVehicleFunctions(vehicle, isSaveable = true) {
 
             if (vehicle.fuel <= 0 && vehicle.isEngineOn) {
                 vehicle.isEngineOn = false;
+                alt.emitClient(null, 'vehicle:KillEngine', vehicle);
                 if (vehicle.driver) {
                     alt.emitClient(vehicle.driver, 'vehicle:StartEngine', false);
                     vehicle.driver.send(`{FFFF00} You are out of fuel.`);

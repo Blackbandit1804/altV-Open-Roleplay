@@ -34,7 +34,7 @@ let interaction = new Interaction(
     20,
     'to begin training agility.'
 );
-interaction.addBlip(126, 6, jobName);
+interaction.addBlip(480, 4, jobName, 'agility');
 
 alt.on('job:AgilityWorkout', player => {
     let pos;

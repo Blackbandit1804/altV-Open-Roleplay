@@ -65,7 +65,7 @@ function startFishing(player, callbackEventName, isNearWater, castLocation) {
     obj = new Objective(objectives.WAIT, modifiers.ON_FOOT);
     obj.setPosition(player.pos);
     obj.setRange(5);
-    obj.useSectorForWaitTime(10000);
+    obj.useSectorForWaitTime(60000);
     obj.setHelpText('Wait for a fish to bite...');
     obj.setMarker(
         28,
@@ -99,7 +99,9 @@ function startFishing(player, callbackEventName, isNearWater, castLocation) {
     );
     obj.setFinishedSound('complete');
     obj.setAnimationAndSound('amb@world_human_stand_fishing@idle_a', 'idle_c', 1, -1);
-    obj.setRewards([{ type: 'xp', prop: 'fishing', quantity: 85 }]);
+    obj.setRewards([
+        { type: 'table', prop: 'rawfish', skill: 'fishing', quantity: 1, givexp: true }
+    ]);
     job.add(copyObjective(obj));
 
     job.start(player);

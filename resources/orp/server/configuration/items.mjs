@@ -1,5 +1,12 @@
 import * as alt from 'alt';
 
+/**
+ * Inventory Information
+ * All items need a BaseItem
+ * BaseItems can have `itemeffects` that do specific things.
+ * Icons can be found in client/html/icons
+ */
+
 export const BaseItems = {
     weapon: {
         eventcall: 'itemeffects:EquipItem',
@@ -34,6 +41,30 @@ export const BaseItems = {
             sell: true,
             rename: false,
             stack: true
+        },
+        slot: -1
+    },
+    generic: {
+        eventcall: '',
+        abilities: {
+            drop: true,
+            use: false,
+            destroy: true,
+            sell: true,
+            rename: false,
+            stack: false
+        },
+        slot: -1
+    },
+    ingredient: {
+        eventcall: '',
+        abilities: {
+            drop: true,
+            use: false,
+            destroy: true,
+            sell: true,
+            rename: false,
+            stack: false
         },
         slot: -1
     },
@@ -95,7 +126,7 @@ export const BaseItems = {
             rename: true,
             stack: false
         },
-        slot: 4
+        slot: 1
     },
     watch: {
         eventcall: 'itemeffects:EquipItem',
@@ -132,6 +163,18 @@ export const BaseItems = {
             stack: false
         },
         slot: 7
+    },
+    mask: {
+        eventcall: 'itemeffects:EquipItem',
+        abilities: {
+            drop: true,
+            use: true,
+            destroy: true,
+            sell: true,
+            rename: true,
+            stack: false
+        },
+        slot: 4
     },
     bodyarmour: {
         eventcall: 'itemeffects:EquipItem',
@@ -325,6 +368,18 @@ export const BaseItems = {
         },
         slot: -1
     },
+    medkit: {
+        eventcall: 'itemeffects:UseMedkit',
+        abilities: {
+            drop: true,
+            use: true,
+            destroy: true,
+            sell: false,
+            rename: false,
+            stack: true
+        },
+        slot: -1
+    },
     repairkit: {
         eventcall: 'itemeffects:RepairVehicle',
         abilities: {
@@ -378,6 +433,50 @@ export const BaseItems = {
             use: false,
             destroy: true,
             sell: false,
+            rename: false,
+            stack: false
+        }
+    },
+    rawfood: {
+        eventcall: 'itemeffects:RawFood',
+        abilities: {
+            drop: true,
+            use: true,
+            destroy: false,
+            sell: true,
+            rename: false,
+            stack: false
+        }
+    },
+    rawfish: {
+        eventcall: 'itemeffects:RawFood',
+        abilities: {
+            drop: true,
+            use: true,
+            destroy: false,
+            sell: true,
+            rename: false,
+            stack: false
+        }
+    },
+    burntfood: {
+        eventcall: '',
+        abilities: {
+            drop: true,
+            use: false,
+            destroy: false,
+            sell: true,
+            rename: false,
+            stack: false
+        }
+    },
+    cookedfood: {
+        eventcall: 'itemeffects:Consume',
+        abilities: {
+            drop: true,
+            use: true,
+            destroy: false,
+            sell: true,
             rename: false,
             stack: false
         }
@@ -438,6 +537,22 @@ export const Items = {
         quantity: 0,
         icon: 'soda'
     },
+    rawfish: {
+        name: '',
+        base: 'rawfish',
+        key: 'rawfish',
+        props: { xp: 0 },
+        quantity: 0,
+        icon: 'fish'
+    },
+    cookedfood: {
+        name: '',
+        base: 'cookedfood',
+        key: 'cookedfood',
+        props: { health: 0 },
+        quantity: 0,
+        icon: 'can'
+    },
     hat: {
         name: 'Hat',
         base: 'hat',
@@ -450,6 +565,14 @@ export const Items = {
         name: 'Helmet',
         base: 'helmet',
         key: 'helmet',
+        props: {},
+        quantity: 0,
+        icon: 'hat'
+    },
+    mask: {
+        name: 'Mask',
+        base: 'mask',
+        key: 'mask',
         props: {},
         quantity: 0,
         icon: 'bandana'
@@ -618,10 +741,10 @@ export const Items = {
         quantity: 0,
         icon: 'syringe'
     },
-    pickaxe1: {
+    pickaxe: {
         name: 'Rusty Pickaxe',
         base: 'pickaxe',
-        key: 'pickaxe1',
+        key: 'pickaxe',
         props: {
             lvl: {
                 skill: 'mining',
@@ -642,10 +765,10 @@ export const Items = {
         quantity: 0,
         icon: 'pickaxe'
     },
-    axe1: {
+    axe: {
         name: 'Rusty Axe',
         base: 'axe',
-        key: 'axe1',
+        key: 'axe',
         props: {
             lvl: {
                 skill: 'woodcutting',
@@ -666,10 +789,10 @@ export const Items = {
         quantity: 0,
         icon: 'axe'
     },
-    hammer1: {
+    hammer: {
         name: 'Rusty Hammer',
         base: 'hammer',
-        key: 'hammer1',
+        key: 'hammer',
         props: {
             lvl: {
                 skill: 'smithing',
@@ -690,10 +813,10 @@ export const Items = {
         quantity: 0,
         icon: 'hammer'
     },
-    fishingrod1: {
+    fishingrod: {
         name: 'Rusty Fishing Rod',
         base: 'fishingrod',
-        key: 'fishingrod1',
+        key: 'fishingrod',
         props: {
             lvl: {
                 skill: 'fishing',
@@ -796,6 +919,14 @@ export const Items = {
         quantity: 0,
         icon: 'id-card'
     },
+    medkit: {
+        name: 'Medical Kit',
+        base: 'medkit',
+        key: 'medkit',
+        props: {},
+        quantity: 0,
+        icon: 'medical-pack'
+    },
     repairkit: {
         name: 'Repair Kit',
         base: 'repairkit',
@@ -835,6 +966,60 @@ export const Items = {
         props: {},
         quantity: 0,
         icon: 'phone'
+    },
+    candy: {
+        name: 'Candy Bar',
+        base: 'food',
+        key: 'candy',
+        props: {
+            health: 2
+        },
+        quantity: 0,
+        icon: 'chocolate-bar'
+    },
+    hotdog: {
+        name: 'Hot Dog',
+        base: 'food',
+        key: 'hotdog',
+        props: {
+            health: 2
+        },
+        quantity: 0,
+        icon: 'sausage'
+    },
+    burger: {
+        name: 'Burger',
+        base: 'food',
+        key: 'burger',
+        props: {
+            health: 2
+        },
+        quantity: 0,
+        icon: 'burger'
+    },
+    jug: {
+        name: 'Empty Jug',
+        base: 'generic',
+        key: 'jug',
+        props: {},
+        quantity: 0,
+        icon: 'jug'
+    },
+    waterjug: {
+        name: 'Water Jug',
+        base: 'waterjug',
+        key: 'jug',
+        props: {},
+        quantity: 0,
+        icon: 'waterjug'
+    },
+    ingredient: {
+        name: '',
+        base: 'ingredient',
+        key: 'ingredient',
+        props: {},
+        quantity: 0,
+        icon: ''
     }
 };
 

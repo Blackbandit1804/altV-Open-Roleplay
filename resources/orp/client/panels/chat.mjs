@@ -7,8 +7,12 @@ const url = 'http://resource/client/html/chat/index.html';
 let isActive = false;
 let webview;
 let isViewHidden = false;
-let yandexKey;
-let language;
+
+alt.on('view:DestroyAll', () => {
+    if (webview) {
+        webview.destroy();
+    }
+});
 
 /*
 Warning; this is meant to be a seperate webview.
@@ -22,14 +26,14 @@ function turnOnChat(key, value) {
     if (key !== 'loggedin') return;
     alt.off('meta:Changed', turnOnChat);
     toggleDialogue();
+    native.displayRadar(true);
 }
 
 export function toggleDialogue() {
     if (webview === undefined) {
         webview = new alt.WebView(url);
-        webview.on('routeMessage', routeMessage);
+        webview.on('chat:RouteMessage', routeMessage);
         webview.on('chat:Ready', ready);
-        webview.on('chat:FetchLanguage', fetchLanguage);
         return;
     }
 
@@ -37,6 +41,7 @@ export function toggleDialogue() {
     if (alt.Player.local.getMeta('viewOpen')) return;
 
     if (!isActive) {
+        native.displayRadar(true);
         isActive = true;
         alt.Player.local.setMeta('chat', true);
         webview.focus();
@@ -87,32 +92,8 @@ function routeMessage(msg) {
 
 function ready() {
     alt.emitServer('sync:Ready');
-    webview.emit('chat:YandexKey', yandexKey);
-    webview.emit('chat:Language', language);
 }
 
 export function setStatus(player, value) {
     player.setMeta('isChatting', value);
 }
-
-function fetchLanguage() {
-    if (!webview) return;
-    webview.emit('chat:YandexKey', yandexKey);
-    webview.emit('chat:Language', language);
-}
-
-alt.on('option:Changed', (key, value) => {
-    const opt = `option:${key}`;
-    if (opt !== 'option:YandexKey' && opt !== 'option:Language') return;
-    if (opt === 'option:Language') {
-        language = value;
-        if (webview) {
-            webview.emit('chat:Language', language);
-        }
-    } else {
-        yandexKey = value;
-        if (webview) {
-            webview.emit('chat:YandexKey', yandexKey);
-        }
-    }
-});

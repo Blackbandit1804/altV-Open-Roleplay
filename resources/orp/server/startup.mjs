@@ -1,7 +1,15 @@
 import * as alt from 'alt';
 import SQL from '../../postgres-wrapper/database.mjs'; // Database
-import { Account, Character, Vehicle, Details } from './entities/entities.mjs'; // Schemas for Database
+import {
+    Account,
+    Character,
+    Vehicle,
+    Details,
+    Door,
+    Gangs
+} from './entities/entities.mjs'; // Schemas for Database
 import { cacheAccount, setVehicleID, cacheCharacter } from './cache/cache.mjs';
+import { Doors } from './configuration/doors.mjs';
 import fs from 'fs';
 import path from 'path';
 
@@ -28,7 +36,7 @@ let db = new SQL(
     dbInfo.password,
     dbInfo.dbname,
     // Specify New Table Schemas Here
-    [Account, Character, Vehicle, Details]
+    [Account, Character, Vehicle, Details, Door, Gangs]
 );
 
 alt.on('ConnectionComplete', () => {
@@ -83,21 +91,44 @@ function cacheInformation() {
     });
 
     // Passwords are encrypted.
-    db.selectData('Account', ['id', 'username', 'password'], data => {
-        if (data === undefined) return;
+    db.selectData('Account', ['id', 'userid', 'rank'], data => {
+        if (!data) return;
 
         for (let i = 0; i < data.length; i++) {
-            cacheAccount(data[i].username, data[i].id, data[i].password);
+            cacheAccount(data[i].userid, data[i].id, data[i].rank);
         }
 
         alt.log(`=====> Cached: ${data.length} Accounts`);
     });
 
     db.selectData('Character', ['id', 'name'], data => {
-        if (data === undefined) return;
+        if (!data) return;
 
         for (let i = 0; i < data.length; i++) {
             cacheCharacter(data[i].id, data[i].name);
         }
     });
+
+    // Cache dynamic doors
+    // Only persists the dynamic values
+    for (let i = 0; i < Doors.length; i++) {
+        db.fetchByIds(Doors[i].id, 'Door', res => {
+            if (res) {
+                alt.emit('door:CacheDoor', res[0].id, res[0]);
+            } else {
+                // Create new door with defaults from configuration
+                let door = {
+                    id: Doors[i].id,
+                    guid: Doors[i].guid,
+                    lockstate: Doors[i].lockstate,
+                    salePrice: Doors[i].salePrice
+                };
+                db.insertData(door, 'Door', res => {
+                    alt.emit('door:CacheDoor', door.id, door);
+                });
+            }
+        });
+    }
+
+    alt.emit('cache:Complete');
 }

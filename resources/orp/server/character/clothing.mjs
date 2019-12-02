@@ -19,6 +19,7 @@ import { Items } from '../configuration/items.mjs';
 */
 
 const items = {
+    1: Items.mask,
     4: Items.pants,
     5: Items.backpack,
     6: Items.shoes,
@@ -89,10 +90,8 @@ export function purchase(player, jsonData) {
         return;
     }
 
-    delete props.label;
-    delete props.description;
-
-    if (!player.addItem(itemClone.key, 1, props)) {
+    //  key, quantity, props, skipStackable = false, skipSave = false, name = undefined,
+    if (!player.addItem(itemClone.key, 1, props, true, false, props.label)) {
         player.playAudio('error');
         return;
     }

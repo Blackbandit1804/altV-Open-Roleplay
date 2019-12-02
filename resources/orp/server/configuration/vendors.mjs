@@ -1,7 +1,6 @@
 import * as alt from 'alt';
-import { Interaction } from '../systems/interaction.mjs';
 
-export const vendors = [
+export const Vendors = [
     {
         base: 'vehicle',
         type: 'sportclassic',
@@ -14,9 +13,9 @@ export const vendors = [
         cPos: { x: -45.1474723815918, y: -1100.4794921875, z: 27.422344207763672 },
         exit: { x: -69.21147155761719, y: -1099.0828857421875, z: 26.305255889892578 },
         blip: {
-            name: `Demoriaan's Premium Deluxe Motorsport`,
-            sprite: 595,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -31,9 +30,9 @@ export const vendors = [
         cPos: { x: -176.82159423828125, y: -1373.4140625, z: 32.26244354248047 },
         exit: { x: -194.41993713378906, y: -1387.773193359375, z: 31.17905616760254 },
         blip: {
-            name: `Jagger's Coupes`,
-            sprite: 530,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -48,9 +47,26 @@ export const vendors = [
         cPos: { x: -1111.57763671875, y: -1685.13916015625, z: 4.358005523681641 },
         exit: { x: -1110.1614990234375, y: -1682.3306884765625, z: 4.297565460205078 },
         blip: {
-            name: `Riley's Bikes`,
-            sprite: 147,
-            color: 11
+            name: `Bike Shop`,
+            sprite: 225,
+            color: 53
+        }
+    },
+    {
+        base: 'vehicle',
+        type: 'cycle',
+        interaction: {
+            x: -611.5973510742188,
+            y: -276.5471496582031,
+            z: 38.768062591552734
+        },
+        pos: { x: -605.1317138671875, y: -281.3689880371094, z: 38.769142150878906 },
+        cPos: { x: -607.5381469726562, y: -283.3824157714844, z: 38.729549407958984 },
+        exit: { x: -596.4031982421875, y: -302.9998474121094, z: 34.97161102294922 },
+        blip: {
+            name: `Bike Shop`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -65,9 +81,9 @@ export const vendors = [
         cPos: { x: -570.4085693359375, y: -452.3079528808594, z: 35.27840042114258 },
         exit: { x: -580.0252075195312, y: -452.1733093261719, z: 34.274818420410156 },
         blip: {
-            name: `Vilachi Supercars`,
-            sprite: 147,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -82,9 +98,9 @@ export const vendors = [
         cPos: { x: 149.10450744628906, y: -128.09812927246094, z: 55.8261833190918 },
         exit: { x: 139.3188934326172, y: -122.8599624633789, z: 54.766761779785156 },
         blip: {
-            name: `Trenton's Compact Cars`,
-            sprite: 147,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -99,9 +115,9 @@ export const vendors = [
         cPos: { x: 153.80519104003906, y: 165.93077087402344, z: 105.9390640258789 },
         exit: { x: 154.77099609375, y: 176.02566528320312, z: 105.20506286621094 },
         blip: {
-            name: `Jizzy River's SUVs`,
-            sprite: 147,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -116,9 +132,9 @@ export const vendors = [
         cPos: { x: -409.5498962402344, y: 1180.855712890625, z: 326.5988464355469 },
         exit: { x: -397.6817932128906, y: 1177.038330078125, z: 325.64178466796875 },
         blip: {
-            name: `Mika's Sport Vehicles`,
-            sprite: 523,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -129,9 +145,9 @@ export const vendors = [
         cPos: { x: 1980.843994140625, y: 3779.506103515625, z: 32.18077087402344 },
         exit: { x: 1985.4091796875, y: 3769.632080078125, z: 32.180641174316406 },
         blip: {
-            name: `Shao's Offroad Emporium`,
-            sprite: 512,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -142,9 +158,9 @@ export const vendors = [
         cPos: { x: 184.50619506835938, y: 6626.79345703125, z: 31.658763885498047 },
         exit: { x: 194.9999237060547, y: 6624.50048828125, z: 31.627395629882812 },
         blip: {
-            name: `Sonny Brook's Sedans`,
-            sprite: 147,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -159,9 +175,9 @@ export const vendors = [
         cPos: { x: -724.9974365234375, y: -1334.135498046875, z: 1.5962917804718018 },
         exit: { x: -723.8484497070312, y: -1351.585205078125, z: -0.4749705493450165 },
         blip: {
-            name: `Ryan Bando's Boats`,
-            sprite: 455,
-            color: 11
+            name: `Boat Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -176,9 +192,9 @@ export const vendors = [
         cPos: { x: -906.0074462890625, y: -1464.50341796875, z: 1.6341688632965088 },
         exit: { x: -892.0516357421875, y: -1444.6002197265625, z: -0.47474759817123413 },
         blip: {
-            name: `Davy's Speedboat Dock`,
-            sprite: 455,
-            color: 11
+            name: `Boat Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -189,9 +205,9 @@ export const vendors = [
         cPos: { x: -993.2159423828125, y: -3005.637939453125, z: 13.945075988769531 },
         exit: { x: -1020.192626953125, y: -2977.846923828125, z: 13.947741508483887 },
         blip: {
-            name: `Tidal's Luxury Aircraft`,
-            sprite: 575,
-            color: 11
+            name: `Aircraft Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -206,9 +222,9 @@ export const vendors = [
         cPos: { x: -1297.5157470703125, y: -1308.5504150390625, z: 4.679189205169678 },
         exit: { x: -1301.8232421875, y: -1303.0283203125, z: 4.711495399475098 },
         blip: {
-            name: `Qallle's Motorcycle Shop`,
-            sprite: 226,
-            color: 11
+            name: `Motorcycle Dealership`,
+            sprite: 225,
+            color: 53
         }
     },
     {
@@ -219,28 +235,26 @@ export const vendors = [
         cPos: { x: 729.4063110351562, y: -2103.397216796875, z: 29.28108787536621 },
         exit: { x: 727.3639526367188, y: -2090.68994140625, z: 29.291629791259766 },
         blip: {
-            name: `Take's Van Shop`,
-            sprite: 318,
-            color: 11
+            name: `Dealership`,
+            sprite: 225,
+            color: 53
+        }
+    },
+    {
+        base: 'vehicle',
+        type: 'commercial',
+        interaction: {
+            x: 1246.0899658203125,
+            y: -3133.77294921875,
+            z: 5.622241973876953
+        },
+        pos: { x: 1248.0540771484375, y: -3142.36279296875, z: 5.760153293609619 },
+        cPos: { x: 1248.0540771484375, y: -3142.36279296875, z: 5.760153293609619 },
+        exit: { x: 1245.4488525390625, y: -3153.01513671875, z: 5.577729225158691 },
+        blip: {
+            name: `Commercial Dealership`,
+            sprite: 225,
+            color: 53
         }
     }
 ];
-
-vendors.forEach((vendor, index) => {
-    // Vehicle Vendors
-    if (vendor.base === 'vehicle') {
-        let interactionPoint = { ...vendor.interaction };
-        interactionPoint.z -= 0.5;
-        let interaction = new Interaction(
-            interactionPoint,
-            'vendor',
-            'vehicle:Vendor',
-            3,
-            3,
-            'to browse the vehicle lot.',
-            index
-        );
-        interaction.addBlip(vendor.blip.sprite, vendor.blip.color, vendor.blip.name);
-        alt.emit('register:VehicleVendor', vendor, index);
-    }
-});

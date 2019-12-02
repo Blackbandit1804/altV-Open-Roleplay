@@ -1,100 +1,108 @@
 import * as alt from 'alt';
-import * as utilityEncryption from '../utility/encryption.mjs';
-import * as cache from '../cache/cache.mjs';
 import SQL from '../../../postgres-wrapper/database.mjs';
 import { Config } from '../configuration/config.mjs';
+import { getDoor } from '../systems/door.mjs';
 
 const db = new SQL(); // Get DB Reference
-const LoggedInPlayers = [];
 
-// Called when a user wants to login from events folder.
-export function existingAccount(player, username, password) {
-    if (player.guid !== undefined) return;
+alt.on('orp:Login', (player, id, discordID) => {
+    const existing = alt.Player.all.find(
+        target => target && target.discord === discordID
+    );
 
-    // Console Logging for Login Attempts
-    alt.log(`${player.name} is attempting a login with ${username}.`);
-
-    // Insure that username and password field are filled out.
-    if (username === undefined || password === undefined) {
-        player.showRegisterEventError('Username or password is undefined.');
+    if (existing) {
+        console.log('Player is already logged in. [1]');
+        player.kick('Already logged in.');
         return;
     }
 
-    // Get the account from the cache.
-    const account = cache.getAccount(username);
+    player.discord = discordID;
+    player.guid = id;
 
-    if (account === undefined) {
-        player.showRegisterEventError('Account was not found.');
-        return;
-    }
+    player.setMeta('id', player.guid);
+    player.setMeta('discord', player.discord);
 
-    if (!utilityEncryption.verifyPassword(password, account.password)) {
-        player.showRegisterEventError('Username or Password does not match.');
-        return;
-    }
+    db.fetchAllByField('guid', player.guid, 'Character', characters => {
+        if (Array.isArray(characters) && characters.length >= 1) {
+            alt.log('Loading existing characters...');
 
-    if (LoggedInPlayers.includes(username)) {
-        player.showRegisterEventError('This account is already logged in.');
-        return;
-    }
+            // Existing Characters
+            player.characters = characters;
+            alt.emitClient(
+                player,
+                'character:Select',
+                characters,
+                Config.characterPoint,
+                Config.characterCamPoint
+            );
+        } else {
+            alt.log('Creating new character...');
 
-    // Keep track of logged in players.
-    LoggedInPlayers.push(username);
+            // New Character
+            const currentTime = Date.now();
+            const data = {
+                guid: player.guid,
+                lastposition: JSON.stringify(Config.defaultSpawnPoint),
+                health: 200,
+                cash: Config.defaultPlayerCash,
+                bank: Config.defaultPlayerBank,
+                creation: currentTime,
+                lastlogin: currentTime
+            };
 
-    player.username = username;
-    player.showRegisterEventSuccess('Successful login! Please wait...');
-    finishPlayerLogin(player, account.id);
-    alt.log(`${player.name} has logged in.`);
-}
-
-// Called when the player is finishing their login.
-export function finishPlayerLogin(player, databaseID) {
-    player.closeRegisterDialogue();
-    player.screenFadeOut(500);
-    player.guid = databaseID;
-
-    db.fetchByIds(player.guid, 'Character', results => {
-        // Existing Character
-        if (Array.isArray(results) && results.length >= 1) {
-            existingCharacter(player, results[0]);
-            return;
+            // Save the new Character data to the database and assign to the player.
+            db.upsertData(data, 'Character', data => {
+                existingCharacter(player, data);
+            });
         }
-
-        const currentTime = Date.now();
-
-        // New Character
-        const data = {
-            id: player.guid,
-            lastposition: JSON.stringify(Config.defaultSpawnPoint),
-            model: 'mp_m_freemode_01',
-            health: 200,
-            cash: Config.defaultPlayerCash,
-            bank: Config.defaultPlayerBank,
-            creation: currentTime,
-            lastlogin: currentTime
-        };
-
-        // Save the new Character data to the database and assign to the player.
-        db.upsertData(data, 'Character', data => {
-            existingCharacter(player, data);
-        });
     });
-}
+});
 
 // Called for any existing characters.
-function existingCharacter(player, data) {
+export function existingCharacter(player, data) {
     player.data = data;
     player.emitMeta('loggedin', true);
+    player.dimension = 0;
 }
 
-export function removeLoggedInPlayer(username) {
-    let res = LoggedInPlayers.findIndex(x => x === username);
+alt.on('logout:Player', player => {
+    if (!player) {
+        return;
+    }
 
-    if (res <= -1) return;
+    if (player.trading) {
+        alt.emit('trade:KillTrade', player);
+    }
 
-    let removedUser = LoggedInPlayers.splice(res, 1);
-    console.log(`${removedUser} was was logged out.`);
-}
+    // UnArrest on Disconnect
+    if (player.cuffedPlayer) {
+        player.cuffedPlayer.setSyncedMeta('arrested', undefined);
+        player.cuffedPlayer.emitMeta('arrest', undefined);
+    }
+
+    // Standard Player Logout Routine
+    player.updatePlayingTime();
+    player.data.health = player.health;
+    player.data.armour = player.armour;
+
+    // Determine Last Location
+    if (player.isArrested) {
+        player.data.lastposition = JSON.stringify({
+            x: 459.00830078125,
+            y: -998.204833984375,
+            z: 24.91485023498535
+        });
+    } else {
+        const loc = !player.lastLocation ? player.lastLocation : player.pos;
+        player.data.lastposition = JSON.stringify(loc);
+    }
+
+    // Save Player
+    player.save();
+
+    // Logout Message
+    alt.log(`${player.discord} has disconnected.`);
+});
 
 /**
  * This is called after the chat is started.
@@ -102,65 +110,95 @@ export function removeLoggedInPlayer(username) {
  * @param player
  */
 export function sync(player) {
-    if (player.synced) return;
+    if (player.synced) {
+        console.log(`${player.discord} attempted to get resynced.`);
+        return;
+    }
+
     player.synced = true;
+    player.screenFadeOut(250);
+
+    setTimeout(() => {
+        alt.emit('sync:Player', player);
+    }, 1500);
+}
+
+alt.on('sync:Player', player => {
+    if (!player.data) {
+        player.kick();
+        alt.log('Player has unknown data.');
+        return;
+    }
+
+    player.startTime = Date.now();
 
     // Setup Position
-    const lastPos = JSON.parse(player.data.lastposition);
+    let lastKnownPos = JSON.parse(player.data.lastposition);
+    if (lastKnownPos === null) {
+        lastKnownPos = Config.defaultSpawnPoint;
+    }
+
     player.needsRoleplayInfo = true;
-    player.spawn(lastPos.x, lastPos.y, lastPos.z, 1);
+
+    player.spawn(lastKnownPos.x, lastKnownPos.y, lastKnownPos.z, 0);
+    player.setSyncedMeta('id', player.data.id);
 
     // Set player name.
     if (player.data.name !== null && player.data.dob !== null) {
         player.needsRoleplayInfo = false;
         player.setSyncedMeta('name', player.data.name);
         player.setSyncedMeta('dob', player.data.dob);
-        player.setSyncedMeta('id', player.data.id);
         alt.log(`${player.data.name} has spawned.`);
     }
 
     // Check if the player has a face.
-    if (player.data.face === null) {
-        player.model = 'mp_f_freemode_01';
+    if (!player.data.sexgroup) {
         player.isNewPlayer = true;
-        player.showFaceCustomizerDialogue(lastPos);
+        player.showFaceCustomizerDialogue(lastKnownPos);
     } else {
-        player.applyFace(player.data.face);
-
+        alt.emitClient(player, 'camera:SetupSky', lastKnownPos);
+        player.applyFace();
         if (player.needsRoleplayInfo) {
             player.showRoleplayInfoDialogue();
         }
+        alt.emitClient(player, 'camera:FinishSky');
     }
 
     // Fixes any 'string' issue that may arise.
-    player.data.cash = player.data.cash * 1;
-    player.data.bank = player.data.bank * 1;
+    player.data.cash = parseInt(player.data.cash);
+    player.data.bank = parseInt(player.data.bank);
 
-    // Setup data on the player.
-    player.dimension = 0;
-    player.startTime = Date.now(); // Used for time tracking
+    if (player.data.dimension !== 0) {
+        player.dimension = parseInt(player.data.dimension);
+        const door = getDoor(player.data.dimension);
+        if (!door) {
+            player.pos = Config.defaultSpawnPoint;
+        } else {
+            player.pos = door.exit.position;
+            player.emitMeta('door:EnteredInterior', door);
+        }
+    }
+
     player.spawnVehicles();
-    player.screenFadeIn(1000);
     player.setLastLogin();
     player.updateTime();
     player.syncInteractionBlips();
     player.syncXP();
     player.syncContacts();
+    player.syncGang();
+    player.syncInventory(true);
+    player.syncMoney();
+    player.syncDoorStates();
+    player.syncArrest();
+    player.screenFadeIn(1500);
 
-    // Setup Health / Armor
-    let timeout = setTimeout(() => {
-        if (!player) clearTimeout(timeout);
-        player.syncInventory(true);
-        player.syncMoney();
-        player.syncDoorStates();
-        player.syncArrest();
-        if (player.data.dead) {
-            player.health = 0;
-            player.armour = 0;
-            player.send('You last logged out as dead.');
-        } else {
-            player.health = player.data.health;
-            player.armour = player.data.armour;
-        }
-    }, 1500);
-}
+    if (player.data.dead) {
+        player.health = 0;
+        player.armour = 0;
+        player.notify('You logged out as dead.');
+        return;
+    }
+
+    player.health = player.data.health;
+    player.armour = player.data.armour;
+});

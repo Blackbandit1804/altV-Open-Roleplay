@@ -1,11 +1,10 @@
 import * as alt from 'alt';
-import * as configurationItems from '../configuration/items.mjs';
 import * as utilityVector from '../utility/vector.mjs';
-import * as utilityEncryption from '../utility/encryption.mjs';
 import { generateHash } from '../utility/encryption.mjs';
 import { BaseItems, Items } from '../configuration/items.mjs';
 import { Weapons } from '../configuration/weapons.mjs';
 import { objectToNull } from '../utility/object.mjs';
+import { actionMessage } from '../chat/chat.mjs';
 
 // hash, itemdata
 let ItemDrops = new Map();
@@ -207,6 +206,7 @@ export function destroy(player, hash) {
     }
 
     const item = player.inventory[index];
+    actionMessage(player, `Destroyed ${item.name}.`);
     player.notify(`Destroyed: ${item.name} ${item.quantity}x`);
     player.removeItem(index);
 }
@@ -222,7 +222,6 @@ export function pickup(player, hash) {
     if (!player.addItem(item.key, item.quantity, item.props, false, false, item.name)) {
         ItemDrops.set(hash, item);
         player.pickingUpItem = false;
-        alt.emitClient(null, 'inventory:ItemDrop', null, clonedItem, randomPos);
         return;
     }
 
@@ -232,14 +231,10 @@ export function pickup(player, hash) {
     player.pickingUpItem = false;
 }
 
-export function swapItem(player, heldIndex, dropIndex) {
-    player.swapItems(heldIndex, dropIndex);
-}
-
-export function addWeapon(player, weaponName) {
+export function addWeapon(player, weaponName, name = undefined) {
     let weapon;
     Object.keys(Weapons).forEach(key => {
-        if (key !== weaponName) return;
+        if (key.toLowerCase() !== weaponName.toLowerCase()) return;
         weapon = {
             name: key,
             value: Weapons[key]
@@ -247,19 +242,20 @@ export function addWeapon(player, weaponName) {
     });
 
     if (!weapon) return false;
+    const useCustomName = name !== undefined ? name : weapon.name;
 
     const props = {
         hash: weapon.value
     };
 
-    player.addItem('weapon', 1, props, false, false, weapon.name);
+    player.addItem('weapon', 1, props, false, false, useCustomName);
     return true;
 }
 
-export function addBoundWeapon(player, weaponName) {
+export function addBoundWeapon(player, weaponName, name = undefined) {
     let weapon;
     Object.keys(Weapons).forEach(key => {
-        if (key !== weaponName) return;
+        if (key.toLowerCase() !== weaponName.toLowerCase()) return;
         weapon = {
             name: key,
             value: Weapons[key]
@@ -267,11 +263,12 @@ export function addBoundWeapon(player, weaponName) {
     });
 
     if (!weapon) return false;
+    const useCustomName = name !== undefined ? name : weapon.name;
 
     const props = {
         hash: weapon.value
     };
 
-    player.addItem('boundweapon', 1, props, false, false, weapon.name);
+    player.addItem('boundweapon', 1, props, false, false, useCustomName);
     return true;
 }

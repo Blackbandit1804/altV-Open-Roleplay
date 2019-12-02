@@ -74,6 +74,7 @@ export function spawnVehicle(player, veh, newVehicle = false) {
     vehicle.fuel = vehicle.data.fuel ? parseFloat(vehicle.data.fuel) : 100;
     vehicle.setSyncedMeta('fuel', vehicle.fuel);
     vehicle.setSyncedMeta('id', veh.id);
+    vehicle.dimension = parseInt(vehicle.data.dimension);
 
     // Synchronize the Stats
     /*
@@ -97,6 +98,7 @@ export function spawnVehicle(player, veh, newVehicle = false) {
 
     if (newVehicle) {
         alt.emitClient(player, 'vehicle:SetIntoVehicle', vehicle);
+        vehicle.lockState = 1;
     }
 
     player.vehicles.push(vehicle);
@@ -181,7 +183,7 @@ export function toggleLock(player, data) {
 
     if (!player.vehicles.includes(vehicle)) return;
 
-    if (vehicle.lockState === 2) {
+    if (vehicle.lockState >= 2 || vehicle.lockState === 0) {
         vehicle.lockState = 1; // Unlocked
         player.send('Your vehicle is now unlocked.');
 
@@ -208,6 +210,7 @@ export function toggleEngine(player, data) {
 
     if (vehicle.fuel <= 0) {
         vehicle.isEngineOn = false;
+        vehicle.setSyncedMeta('fuel', 0);
         player.send(`{FFFF00} You are out of fuel.`);
     }
 
@@ -248,10 +251,17 @@ export function saveChanges(player, vehicle, jsonData) {
 export function fillFuel(player, data) {
     const vehicle = data.vehicle;
     if (!vehicle) return;
+    if (vehicle.isBeingFilled) {
+        player.notify('Vehicle is already being filled up.');
+        return;
+    }
 
     const fuelUntilFull = 100 - vehicle.fuel;
     const perUnit = 0.5;
     const totalCost = fuelUntilFull * perUnit;
+
+    if (isNaN(fuelUntilFull)) return;
+    if (isNaN(totalCost)) return;
 
     let msg = `{FFFF00} Total Cost was: {00FF00} $${totalCost}.`;
     if (!player.subCash(totalCost)) {
@@ -273,10 +283,22 @@ export function checkFuel(player, data) {
 }
 
 export function repairVehicle(player, data) {
+    if (!player.subItem('repairkit', 1)) {
+        player.notify('You do not have a repair kit.');
+        return;
+    }
+
     const vehicle = data.vehicle;
-    if (!vehicle) return;
-    vehicle.repair();
-    player.send(`{FFFF00}Vehicle has been repaired.`);
+    if (!vehicle) {
+        return;
+    }
+
+    actionMessage(player, 'Begins repairing the vehicle...');
+    player.playAnimation('missmechanic', 'work2_base', -1, 1);
+    vehicle.isBeingRepaired = {
+        time: Date.now() + Config.vehicleRepairTime,
+        player
+    };
 }
 
 export function trackVehicle(player, id) {
@@ -298,9 +320,29 @@ export function destroyVehicle(player, id) {
 export function refuelVehicle(player, data) {
     const vehicle = data.vehicle;
     if (!vehicle) return;
+    if (vehicle.fuel >= 100) {
+        player.notify('The tank is already full.');
+        return;
+    }
+
     actionMessage(player, 'Begins to fill the vehicle with fuel.');
     vehicle.isBeingFilled = {
         time: Date.now() + Config.vehicleFuelTime,
         player
     };
+}
+
+export function leaveEngineRunning(player) {
+    if (!player) return;
+
+    const vehicle = player.lastVehicle;
+    if (!vehicle) return;
+
+    const dist = distance(player.pos, vehicle.pos);
+    if (dist > 5) return;
+
+    if (player.vehicles === undefined) return;
+    if (!player.vehicles.includes(vehicle)) return;
+    vehicle.isEngineOn = true;
+    alt.emitClient(null, 'vehicle:ForceEngineOn', vehicle);
 }

@@ -27,17 +27,19 @@ export class Interaction {
     }
 
     // Add a blip
-    addBlip(sprite, color, label) {
+    addBlip(sprite, color, label, category = 'temporary') {
         this.blip = {
             position: this.pos,
-            sprite: sprite,
-            color: color,
-            label: label
+            sprite,
+            color,
+            label,
+            category
         };
     }
 
     // Call the server event from anywhere on the server-side.
     exec(player) {
+        if (!player);
         if (utilityVector.distance(player.pos, this.pos) > this.radius) {
             player.emitMeta('interaction', undefined);
             return;
@@ -51,7 +53,13 @@ export class Interaction {
 export function syncBlips(player) {
     interactions.forEach(i => {
         if (!i.blip) return;
-        player.createBlip(i.blip.position, i.blip.sprite, i.blip.color, i.blip.label);
+        player.createBlip(
+            i.blip.category,
+            i.blip.position,
+            i.blip.sprite,
+            i.blip.color,
+            i.blip.label
+        );
     });
 }
 
@@ -74,6 +82,7 @@ export function forwardEventToPlayer(colshape, entity) {
 // player hits the correct button. This is basically called
 // after the player press 'E' and is standing in a ColShape.
 export function attemptToExecuteInteraction(player) {
+    if (!player) return;
     const data = player.getMeta('interaction');
 
     if (data === undefined || data === null) return;
@@ -88,6 +97,7 @@ export function attemptToExecuteInteraction(player) {
 
 // Clear the interaction synced meta information.
 export function clearInteraction(player) {
+    if (!player) return;
     const data = player.getMeta('interaction');
 
     if (data === undefined || data === null) return;

@@ -11,6 +11,12 @@ alt.on('view:ForceClose', () => {
     currentView.close();
 });
 
+alt.on('view:DestroyAll', () => {
+    if (currentView && currentView.view) {
+        currentView.view.destroy();
+    }
+});
+
 export class View {
     constructor() {
         if (alt.Player.local.getMeta('chat')) return;
@@ -21,11 +27,16 @@ export class View {
     }
 
     open(url, killControls = true) {
-        if (currentView.view) return;
+        showCursor(false);
+
+        if (!currentView.view) {
+            currentView.view = new alt.WebView(url);
+            currentView.events = [];
+        }
+
         alt.Player.local.setMeta('viewOpen', true);
         alt.emit('chat:Toggle');
-        currentView.view = new alt.WebView(url);
-        currentView.events = [];
+
         currentView.on('close', currentView.close);
         currentView.view.url = url;
         currentView.view.isVisible = true;
@@ -41,19 +52,19 @@ export class View {
 
     // Close view and hide.
     close() {
-        if (!currentView.ready) return;
         currentView.ready = false;
 
         currentView.events.forEach(event => {
             currentView.view.off(event.name, event.func);
         });
 
+        currentView.view.off('close', currentView.close);
+        currentView.view.url = 'http://resource/client/html/empty/index.html';
+        currentView.view.unfocus();
+        currentView.events = [];
+
         showCursor(false);
         native.displayRadar(true);
-        currentView.view.off('close', currentView.close);
-        currentView.view.unfocus();
-        currentView.view.destroy();
-        currentView.view = undefined;
         alt.Player.local.setMeta('viewOpen', false);
         alt.emit('chat:Toggle');
         if (currentView.interval !== undefined) {

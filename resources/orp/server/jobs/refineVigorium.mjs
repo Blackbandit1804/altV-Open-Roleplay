@@ -8,6 +8,7 @@ import {
     restrictions
 } from '../systems/job.mjs';
 import { Interaction } from '../systems/interaction.mjs';
+import { doesUserHaveTurfAccess } from '../systems/gangs.mjs';
 
 const jobName = 'Vigorium Refinery';
 const trackStart = {
@@ -26,9 +27,14 @@ let interaction = new Interaction(
     3,
     'to begin refining vigoirum.'
 );
-interaction.addBlip(365, 6, jobName);
+interaction.addBlip(365, 6, jobName, 'crafting');
 
 alt.on('job:RefineVigorium1', player => {
+    if (!doesUserHaveTurfAccess(player)) {
+        player.notify('You must own this turf to access this point.');
+        return;
+    }
+
     let job = new Job(player, jobName, restrictions.NO_DIEING | restrictions.NO_WEAPONS);
     job.setItemRestrictions([{ key: 'unrefinedvigorium', hasItem: true }]);
     let obj;
@@ -164,8 +170,8 @@ alt.on('job:RefineVigorium1', player => {
     obj.setRewards([
         { type: 'xp', prop: 'crafting', quantity: 20 },
         { type: 'item', prop: 'refinedvigorium', quantity: 1 },
-        { type: 'xp', prop: 'notoriety', quantity: 25 },
-        { type: 'xp', prop: 'nobility', quantity: -75 }
+        { type: 'xp', prop: 'notoriety', quantity: 35 },
+        { type: 'xp', prop: 'nobility', quantity: -140 }
     ]);
     job.add(copyObjective(obj));
 

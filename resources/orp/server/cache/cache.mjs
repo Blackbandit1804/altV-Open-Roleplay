@@ -1,4 +1,7 @@
 import * as alt from 'alt';
+import { colshapes } from '../systems/grid.mjs';
+import { distance } from '../utility/vector.mjs';
+
 // This is a fast and efficient way for us to quickly check
 // data. We pool data into these arrays so we can find a value
 // faster than looking it up in a database. This is done on
@@ -11,15 +14,20 @@ const accounts = {};
 const characters = {};
 let vehicleID;
 
-export function cacheAccount(username, id, password) {
-    accounts[username] = {
+export function cacheAccount(userID, id, rank) {
+    accounts[userID] = {
+        pgid: userID,
         id,
-        password
+        rank
     };
 }
 
-export function getAccount(username) {
-    let dat = accounts[username];
+export function modifyRank(pgid, rank) {
+    accounts[pgid].rank = rank;
+}
+
+export function getAccount(userid) {
+    let dat = accounts[userid];
     return dat;
 }
 

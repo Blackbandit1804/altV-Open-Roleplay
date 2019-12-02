@@ -1,26 +1,16 @@
 import * as alt from 'alt';
 import * as chat from '../chat/chat.mjs';
-import * as configurationItems from '../configuration/items.mjs';
 import fs from 'fs';
-import { addWeapon } from '../systems/inventory.mjs';
-import { addXP, setXP } from '../systems/skills.mjs';
-import { generateHash } from '../utility/encryption.mjs';
+import { fetchTurfSectors } from '../systems/gangs.mjs';
 
 // Development sandbox commands
 const sandboxhelp = [
-    //
     '/b, /me, /do',
-    '/addveh (model)',
-    '/addcash (amount)',
-    '/addwep (name)',
-    '/face, /addxp, /setxp',
-    '/tpto (rp-name)',
-    '/tpwp',
+    '/anim (dict) (name) (duration) (flag)',
     '/players, /clearchat',
-    '/taxi, /mechanic',
+    '/taxi',
     '/cancel',
     '/quitjob, /getsector',
-    '/tryparticle',
     '/phonenumber',
     '/t, /call, /addcontact, /removecontact, /hangup',
     '/d20 /flipcoin, /sf'
@@ -32,97 +22,15 @@ chat.registerCmd('help', player => {
     });
 });
 
-chat.registerCmd('addcash', (player, value) => {
-    let data = value * 1;
-    if (value > 600000) return;
-    player.addCash(data);
-});
-
-chat.registerCmd('addwep', (player, arg) => {
-    if (arg === undefined || arg.length == 0) {
-        player.send('Usage: /addwep (name)');
+chat.registerCmd('anim', (player, args) => {
+    if (args === undefined || args.length < 2) {
+        player.send('Usage: /anim (dict) (name) (duration) (flag)');
         return;
     }
 
-    if (!addWeapon(player, arg[0])) {
-        player.send('Weapon does not exist');
-        return;
-    }
-
-    player.notify('A weapon was added to your inventory.');
-});
-
-chat.registerCmd('face', player => {
-    player.showFaceCustomizerDialogue(player.pos);
-});
-
-chat.registerCmd('additem', (player, arg) => {
-    if (arg == undefined || arg.length == 0) {
-        player.send('Usage: /additem (item)');
-        return;
-    }
-
-    let itemTemplate = configurationItems.Items[`${arg[0]}`];
-    if (!itemTemplate) {
-        player.send('Item does not exist');
-        return;
-    }
-
-    if (!arg[1]) {
-        arg[1] = 1;
-    }
-
-    if (player.addItem(arg[0], parseInt(arg[1]), itemTemplate.props)) {
-        player.send('Added Item');
-    } else {
-        player.send('Did not add item.');
-    }
-});
-
-chat.registerCmd('addveh', (player, arg) => {
-    if (arg == undefined || arg.length == 0) {
-        player.send('Usage: /addveh (vehicle)');
-        return;
-    }
-
-    try {
-        player.addVehicle(arg[0], player.pos, new alt.Vector3(0, 0, 0));
-    } catch (e) {
-        player.send('Not a valid vehicle model. Must be a plain name. ie. infernus');
-    }
-});
-
-chat.registerCmd('coord', (player, args) => {
-    if (args.length <= 2) {
-        player.send('Usage: /coord (x, y, z)');
-        return;
-    }
-
-    player.pos = {
-        x: args[0],
-        y: args[1],
-        z: args[2]
-    };
-});
-
-chat.registerCmd('tpto', (player, arg) => {
-    if (arg === undefined || arg.length == 0) {
-        player.send('Usage: /tpto (roleplay_name)');
-        return;
-    }
-
-    let target = alt.Player.all.find(x => x.data.name.includes(arg[0]));
-
-    if (target === undefined) {
-        player.send('User was not found.');
-        return;
-    }
-
-    player.pos = target.pos;
-});
-
-chat.registerCmd('tpwp', player => {
-    alt.emitClient(player, 'teleportToWaypoint');
+    const dur = args[2] ? args[2] : 2500;
+    const flag = args[3] ? args[3] : 33;
+    player.playAnimation(args[0], args[1], dur, flag);
 });
 
 chat.registerCmd('players', player => {
@@ -137,37 +45,8 @@ chat.registerCmd('pos', player => {
     console.log(player.pos);
 });
 
-chat.registerCmd('save', player => {
-    player.data.pos = JSON.stringify(player.pos);
-    player.save();
-});
-
 chat.registerCmd('sector', player => {
     player.send(`Current Sector -> X: ${player.sector.x}, Y: ${player.sector.y}`);
-});
-
-chat.registerCmd('addxp', (player, args) => {
-    const _skill = args[0];
-    const _amount = parseInt(args[1]);
-
-    if (!_skill || !_amount) {
-        player.send(`/addxp <skill> <amount>`);
-        return;
-    }
-
-    addXP(player, _skill, _amount);
-});
-
-chat.registerCmd('setxp', (player, args) => {
-    const _skill = args[0];
-    const _amount = parseInt(args[1]);
-
-    if (!_skill || !_amount) {
-        player.send(`/setxp <skill> <amount>`);
-        return;
-    }
-
-    setXP(player, _skill, _amount);
 });
 
 // /tryparticle core ent_dst_gen_gobstop 5000 1 0 0 0
@@ -230,4 +109,25 @@ chat.registerCmd('trackclear', () => {
 chat.registerCmd('trackdone', () => {
     fs.writeFileSync(`trackpoints.json`, JSON.stringify(trackPoints, null, '\t'));
     trackPoints = [];
+});
+
+chat.registerCmd('createobj', (player, args) => {
+    const name = args[0];
+    alt.emitClient(player, 'create:Object', name);
+});
+
+chat.registerCmd('tempdoor', (player, args) => {
+    if (!player.isEditingDoor) {
+        player.isEditingDoor = true;
+        alt.emitClient(player, 'editingDoor', true);
+    } else {
+        player.isEditingDoor = false;
+        alt.emitClient(player, 'editingDoor', false);
+    }
+});
+
+chat.registerCmd('showturfs', player => {
+    if (player.data.gang === -1) return;
+    const sectors = fetchTurfSectors(player);
+    alt.emitClient(player, 'grid:TempTurfs', sectors);
 });

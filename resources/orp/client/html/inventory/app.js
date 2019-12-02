@@ -13,57 +13,110 @@ const tabData = {
 const icons = [
     'accessory',
     'agility',
+    'almond',
+    'apple',
+    'asparagus',
     'auto-repair',
+    'avocado',
     'axe',
     'backpack',
+    'banana',
     'bandana',
+    'beer',
+    'beet',
     'body-armour',
     'bracelet',
+    'brandy',
+    'bread',
+    'burger',
+    'cake',
+    'carrot',
+    'cheese',
     'chelsea-boot',
+    'cherry',
     'chocolate-bar',
+    'clear',
+    'clearing',
+    'clouds',
     'coffee-cup',
+    'contact',
+    'cookie',
     'cooking',
-    'cuffs',
+    'corn',
     'crafting',
+    'croissant',
+    'cuffs',
+    'donut',
     'earring',
+    'extrasunny',
     'farming',
     'fish',
     'fishing',
     'fishingrod',
+    'foggy',
+    'garlic',
     'gathering',
     'glasses',
+    'globe',
+    'grain',
+    'grapes',
     'hammer',
     'hand',
     'hat',
+    'herbs',
     'id-card',
     'inventory',
+    'jalapeno',
     'jerrycan',
+    'jug',
+    'keys',
     'leaf',
     'mechanic',
+    'medical-pack',
     'medicine',
     'metal',
     'mining',
+    'mushroom',
+    'mushrooms',
     'nobility',
     'notoriety',
     'outfit',
+    'overcast',
+    'peach',
     'phone',
     'pickaxe',
     'pills',
+    'pizza',
     'planks',
+    'potato',
+    'powder',
     'profile',
+    'rain',
     'rock',
     'rope',
+    'salt',
+    'sausage',
+    'seed',
     'seeds',
     'settings',
     'shirt',
     'smithing',
     'soda-can',
+    'soda',
+    'spice',
     'stats',
+    'sugar',
     'syringe',
+    'thunder',
+    'tomato',
     'trousers',
     'unknown',
     'watch',
+    'waterjug',
+    'watermelon',
     'weapon',
+    'wheat',
+    'wine',
     'wood',
     'woodcutting'
 ];
@@ -86,14 +139,31 @@ const slots = [
     'outfit' // 14
 ];
 
+const skillDescriptions = {
+    agility: 'Sprint for longer a longer period of time.',
+    cooking: 'Cook raw food like fish at campfires and bbqs.',
+    crafting: 'Craft weaponry, better tools, and more at their dedicated locations.',
+    mechanic: 'Repair vehicles and gain access to repair kits.',
+    notoriety: 'Be a bad citizen. Traffic refined drugs, and craft weaponry.',
+    nobility: 'Be a good citizen. Sell legal goods, food, and work in civil services.',
+    fishing: 'Catch raw fish and rarer fish with a Fishing Rod.',
+    smithing: 'Create refined metal for crafting tools.',
+    woodcutting: 'Chop wood for unrefined wood and refine that wood.',
+    medicine: 'Heal others with medical kits, and work as an EMS.',
+    gathering: 'Gather unrefined plants as as kevlarium and vigorium.',
+    mining: 'Mine unrefined metal from the quarries and shafts.'
+};
+
 // The main rendering function.
 class App extends Component {
     constructor(props) {
         super(props);
         this.state = {
             tabIndex: 2,
-            tabIcons: true
+            tabIcons: true,
+            inputIsFocused: false
         };
+        this.inputIsFocused = false;
     }
 
     shouldComponentUpdate() {
@@ -106,7 +176,6 @@ class App extends Component {
     }
 
     componentDidMount() {
-        SVGInject(document.getElementsByClassName('injectable'));
         window.addEventListener('keyup', this.close.bind(this));
 
         if ('alt' in window) {
@@ -114,26 +183,33 @@ class App extends Component {
         }
     }
 
-    componentDidUpdate() {
-        SVGInject(document.getElementsByClassName('injectable'));
-    }
-
     navigate(e) {
         this.setState({ tabIndex: parseInt(e.target.id) });
     }
 
     close(e) {
-        // I Key
-        if (e.keyCode === 'I'.charCodeAt(0)) {
-            alt.emit('inventory:Exit');
-            return;
-        }
+        if (this.inputIsFocused) return;
+        if ('alt' in window) {
+            // I Key
+            if (e.keyCode === 'I'.charCodeAt(0)) {
+                alt.emit('inventory:Exit');
+                return;
+            }
 
-        // Escape
-        if (e.keyCode === 27) {
-            alt.emit('inventory:Exit');
-            return;
+            // Escape
+            if (e.keyCode === 27) {
+                alt.emit('inventory:Exit');
+                return;
+            }
         }
+    }
+
+    setInputFocused(e) {
+        this.inputIsFocused = true;
+    }
+
+    setInputUnfocused(e) {
+        this.inputIsFocused = false;
     }
 
     render() {
@@ -158,13 +234,17 @@ class App extends Component {
                 // Stats
                 this.state.tabIndex == 1 && h(Stats),
                 // Inventory
-                this.state.tabIndex == 2 && h(Inventory),
+                this.state.tabIndex == 2 &&
+                    h(Inventory, {
+                        setInputFocused: this.setInputFocused.bind(this),
+                        setInputUnfocused: this.setInputUnfocused.bind(this)
+                    }),
                 // Vehicles
-                this.state.tabIndex === 3 && h('div', {}, h(Vehicles)),
+                this.state.tabIndex === 3 && h(Vehicles),
                 // Contacts
-                this.state.tabIndex == 4 && h('div', {}, h(Contacts)),
+                this.state.tabIndex == 4 && h(Contacts),
                 // Settings
-                this.state.tabIndex == 5 && h('div', {}, h(Settings))
+                this.state.tabIndex == 5 && h(Settings)
             )
         );
     }
@@ -172,17 +252,22 @@ class App extends Component {
 
 const Navigation = ({ navigate, index }) => {
     const tabs = Object.keys(tabData).map((key, currIndex) => {
+        const isActive = currIndex === index ? true : false;
         return h(
             'div',
             {
                 class: currIndex === index ? 'tabcon active' : 'tabcon',
-                id: tabData[key],
+                id: currIndex,
                 onclick: navigate.bind(this)
             },
-            h('img', {
-                src: `../icons/${key}.svg`,
-                class: 'injectable'
-            })
+            h(
+                'div',
+                { class: 'icon-wrapper', id: currIndex },
+                h('svg', {
+                    type: 'image/svg+xml',
+                    style: `background: url('../icons/${key}.svg');`
+                })
+            )
         );
     });
     return h('div', { class: 'navcon' }, tabs);
@@ -192,210 +277,66 @@ class Settings extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            AirplaneMode: false,
-            YandexKey: '',
-            Language: 'none'
+            categories: []
         };
-        this.setOptionBind = this.setOption.bind(this);
+        this.addCategoryBind = this.addCategory.bind(this);
     }
 
     componentDidMount() {
         if ('alt' in window) {
-            alt.on('option:SetOption', this.setOptionBind);
-            alt.emit('option:LoadOptions');
+            alt.on('option:AddCategory', this.addCategoryBind);
+            setTimeout(() => {
+                alt.emit('option:Ready');
+            }, 500);
+        } else {
+            for (let i = 0; i < 50; i++) {
+                this.addCategory('whatever', 'whatever', 'whatever');
+            }
         }
     }
 
     componentWillUnmount() {
         if ('alt' in window) {
-            alt.off('option:SetOption', this.setOptionBind);
+            alt.off('option:AddCategory', this.addCategoryBind);
         }
     }
 
-    setOption(key, value) {
-        this.setState({ [key]: value });
+    addCategory(name, value, description) {
+        const categories = [...this.state.categories];
+        categories.push({ name, description });
+        let toggle = value === null ? true : value;
+        this.setState({ categories, [name]: toggle });
     }
 
-    setAirplaneMode(e) {
-        this.setState({ AirplaneMode: e.target.checked });
-
-        if ('alt' in window) {
-            alt.emit('option:SetOption', 'option:AirplaneMode', e.target.checked);
-        } else {
-            console.log(e.target.checked);
-        }
+    updateOption(e) {
+        this.setState({ [e.target.id]: e.target.checked });
+        this.pushOptionUpdate(e.target.id, e.target.checked);
     }
 
-    setYandexKey(e) {
-        this.setState({ YandexKey: e.target.value });
-
+    pushOptionUpdate(id, value) {
         if ('alt' in window) {
-            alt.emit('option:SetOption', 'option:YandexKey', this.state.YandexKey);
+            alt.emit('option:SetOption', id, value);
         } else {
-            console.log(e.target.value);
-        }
-    }
-
-    setPreferredLanguage(e) {
-        this.setState({ Language: e.target.value });
-        if ('alt' in window) {
-            alt.emit('option:SetOption', 'option:Language', e.target.value);
-        } else {
-            console.log(e.target.value);
+            console.log(`Updated: ${id} to ${value}`);
         }
     }
 
     renderOptions() {
-        return h(
-            'div',
-            { class: 'options' },
-            // Put Phone on Airplane Mode
-            h(
+        const categories = this.state.categories.map(info => {
+            return h(
                 'div',
                 { class: 'option' },
-                h('div', { class: 'title' }, 'Put Phone on Airplane Mode'),
-                h(
-                    'div',
-                    { class: 'description' },
-                    'Stops all incoming and outgoing messages.'
-                ),
+                h('div', { class: 'title' }, info.description),
                 h('input', {
                     type: 'checkbox',
                     class: 'input',
-                    checked: this.state.AirplaneMode,
-                    onchange: this.setAirplaneMode.bind(this)
+                    checked: this.state[info.name],
+                    onchange: this.updateOption.bind(this),
+                    id: info.name
                 })
-            ),
-            // Translation Service
-            h(
-                'div',
-                { class: 'option' },
-                h('div', { class: 'title' }, 'Yandex Translation API Key'),
-                h(
-                    'div',
-                    { class: 'description' },
-                    'Used to translate English text into your native language. Can be obtained here: https://translate.yandex.com/developers/keys'
-                ),
-                h('input', {
-                    type: 'password',
-                    class: 'input',
-                    value: this.state.YandexKey,
-                    onchange: this.setYandexKey.bind(this)
-                })
-            ),
-            // Translation Language
-            h(
-                'div',
-                { class: 'option' },
-                h('div', { class: 'title' }, '-- Used with API Key'),
-                h(
-                    'div',
-                    { class: 'description' },
-                    'Set your preferred language. This only translates chat; not interfaces.'
-                ),
-                h(
-                    'select',
-                    {
-                        value: this.state.Language,
-                        oninput: this.setPreferredLanguage.bind(this)
-                    },
-                    h('option', { value: 'none', disabled: true }, 'Select Language'),
-                    h('option', { value: 'az' }, 'Azerbaijan'),
-                    h('option', { value: 'sq' }, 'Albanian'),
-                    h('option', { value: 'am' }, 'Amharic'),
-                    h('option', { value: 'en' }, 'English'),
-                    h('option', { value: 'ar' }, 'Arabic'),
-                    h('option', { value: 'hy' }, 'Armenian'),
-                    h('option', { value: 'af' }, 'Afrikaans'),
-                    h('option', { value: 'eu' }, 'Basque'),
-                    h('option', { value: 'ba' }, 'Bashkir'),
-                    h('option', { value: 'be' }, 'Belarusian'),
-                    h('option', { value: 'bn' }, 'Bengali'),
-                    h('option', { value: 'my' }, 'Burmese'),
-                    h('option', { value: 'bg' }, 'Bulgarian'),
-                    h('option', { value: 'bs' }, 'Bosnian'),
-                    h('option', { value: 'cy' }, 'Welsh'),
-                    h('option', { value: 'hu' }, 'Hungarian'),
-                    h('option', { value: 'vi' }, 'Vietnamese'),
-                    h('option', { value: 'ht' }, 'Haitan'),
-                    h('option', { value: 'gl' }, 'Galician'),
-                    h('option', { value: 'nl' }, 'Dutch'),
-                    h('option', { value: 'mrj' }, 'Hill Mari'),
-                    h('option', { value: 'el' }, 'Greek'),
-                    h('option', { value: 'ka' }, 'Georgian'),
-                    h('option', { value: 'gu' }, 'Gujarati'),
-                    h('option', { value: 'da' }, 'Danish'),
-                    h('option', { value: 'he' }, 'Hebrew'),
-                    h('option', { value: 'yi' }, 'Yiddish'),
-                    h('option', { value: 'id' }, 'Indonesian'),
-                    h('option', { value: 'ga' }, 'Irish'),
-                    h('option', { value: 'it' }, 'Italian'),
-                    h('option', { value: 'is' }, 'Icelandic'),
-                    h('option', { value: 'es' }, 'Spanish'),
-                    h('option', { value: 'kk' }, 'Kazakh'),
-                    h('option', { value: 'kn' }, 'Kannada'),
-                    h('option', { value: 'ca' }, 'Katalan'),
-                    h('option', { value: 'ky' }, 'Kyrgyz'),
-                    h('option', { value: 'zh' }, 'Chinese'),
-                    h('option', { value: 'ko' }, 'Korean'),
-                    h('option', { value: 'xh' }, 'Xhosa'),
-                    h('option', { value: 'km' }, 'Khmer'),
-                    h('option', { value: 'lo' }, 'Laotian'),
-                    h('option', { value: 'la' }, 'Latin'),
-                    h('option', { value: 'lv' }, 'Lativan'),
-                    h('option', { value: 'lt' }, 'Lithuanian'),
-                    h('option', { value: 'lb' }, 'Luxembourgish'),
-                    h('option', { value: 'mg' }, 'Malagasy'),
-                    h('option', { value: 'ms' }, 'Malay'),
-                    h('option', { value: 'ml' }, 'Malayalam'),
-                    h('option', { value: 'mt' }, 'Maltese'),
-                    h('option', { value: 'mk' }, 'Macedonian'),
-                    h('option', { value: 'mi' }, 'Maori'),
-                    h('option', { value: 'mr' }, 'Marathi'),
-                    h('option', { value: 'mhr' }, 'Mari'),
-                    h('option', { value: 'mn' }, 'Mongolian'),
-                    h('option', { value: 'de' }, 'German'),
-                    h('option', { value: 'ne' }, 'Nepali'),
-                    h('option', { value: 'no' }, 'Norweigan'),
-                    h('option', { value: 'pa' }, 'Punjabi'),
-                    h('option', { value: 'pap' }, 'Papiamento'),
-                    h('option', { value: 'fa' }, 'Persian'),
-                    h('option', { value: 'pl' }, 'Polish'),
-                    h('option', { value: 'pt' }, 'Portuguese'),
-                    h('option', { value: 'ro' }, 'Romanian'),
-                    h('option', { value: 'ru' }, 'Russian'),
-                    h('option', { value: 'ceb' }, 'Cebuano'),
-                    h('option', { value: 'sr' }, 'Serbian'),
-                    h('option', { value: 'si' }, 'Sinhala'),
-                    h('option', { value: 'sk' }, 'Slovakian'),
-                    h('option', { value: 'sl' }, 'Slovenian'),
-                    h('option', { value: 'sw' }, 'Swahili'),
-                    h('option', { value: 'su' }, 'Sundanese'),
-                    h('option', { value: 'tg' }, 'Tajik'),
-                    h('option', { value: 'th' }, 'Thai'),
-                    h('option', { value: 'tl' }, 'Tagalog'),
-                    h('option', { value: 'ta' }, 'Tamil'),
-                    h('option', { value: 'tt' }, 'Tatar'),
-                    h('option', { value: 'te' }, 'Telugu'),
-                    h('option', { value: 'tr' }, 'Turkish'),
-                    h('option', { value: 'udm' }, 'Udmurt'),
-                    h('option', { value: 'uz' }, 'Uzbek'),
-                    h('option', { value: 'uk' }, 'Ukrainian'),
-                    h('option', { value: 'ur' }, 'Urdu'),
-                    h('option', { value: 'fi' }, 'Finnish'),
-                    h('option', { value: 'fr' }, 'French'),
-                    h('option', { value: 'hi' }, 'Hindi'),
-                    h('option', { value: 'hr' }, 'Croatian'),
-                    h('option', { value: 'cs' }, 'Czech'),
-                    h('option', { value: 'sv' }, 'Swedish'),
-                    h('option', { value: 'gd' }, 'Scottish'),
-                    h('option', { value: 'et' }, 'Estonian'),
-                    h('option', { value: 'eo' }, 'Esperanto'),
-                    h('option', { value: 'jv' }, 'Javanese'),
-                    h('option', { value: 'ja' }, 'Japanese')
-                )
-            )
-        );
+            );
+        });
+        return h('div', { class: 'options' }, categories);
     }
 
     render() {
@@ -575,12 +516,23 @@ class Contacts extends Component {
 
     renderContacts() {
         const contacts = this.state.contacts.map(contact => {
+            const isOn = contact.isOnline;
+
             return h(
                 'div',
                 { class: 'contact' },
                 h('div', { class: 'id' }, contact.id),
                 h('div', { class: 'name' }, contact.name),
-                h('div', { class: 'isOnline' }, `Online? ${contact.isOnline}`),
+                isOn &&
+                    h('svg', {
+                        type: 'image/svg+xml',
+                        style: `background: url('../icons/globe.svg');`
+                    }),
+                !isOn &&
+                    h('svg', {
+                        type: 'image/svg+xml',
+                        style: `background: url('../icons/globe.svg'); opacity: 0.2;`
+                    }),
                 h(
                     'button',
                     {
@@ -599,15 +551,10 @@ class Contacts extends Component {
                 { class: 'input' },
                 h('input', {
                     type: 'number',
-                    value: this.state.contact,
                     onchange: this.contactNumber.bind(this),
-                    onkeydown: this.addContactEnter.bind(this)
-                }),
-                h(
-                    'button',
-                    { class: 'addcontact', onmousedown: this.addContact.bind(this) },
-                    'Add Contact'
-                )
+                    onkeydown: this.addContactEnter.bind(this),
+                    placeholder: `Add a contact's number from '/phonenumber'`
+                })
             )
         );
 
@@ -623,14 +570,11 @@ class Inventory extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            inventory: new Array(128).fill(null)
+            inventory: [],
+            search: ''
         };
-        this.mouseMoveEvent = this.mousemove.bind(this);
-        this.hoverContextMenu = this.hoverWhileContextMenu.bind(this);
-        this.addItemBind = this.addItem.bind(this);
-        this.keydownBind = this.keydown.bind(this);
-        this.keyupBind = this.keyup.bind(this);
         this.forceUpdateBind = this.forceUpdate.bind(this);
+        this.addItemBind = this.addItem.bind(this);
     }
 
     componentDidMount() {
@@ -642,18 +586,21 @@ class Inventory extends Component {
             items[0] = {
                 name: 'Taco',
                 base: 'Food',
+                quantity: 1,
                 hash: '90840921921',
                 icon: 'leaf'
             };
             items[1] = {
                 name: 'Fish Taco That Is Super Delicious',
                 base: 'Food',
+                quantity: 1,
                 hash: '90840921922',
                 icon: 'fish'
             };
             items[2] = {
                 name: 'Fishing Rod',
                 base: 'Hand',
+                quantity: 1,
                 hash: '149214',
                 icon: 'fishingrod'
             };
@@ -708,203 +655,6 @@ class Inventory extends Component {
         } else {
             inventory[index] = null;
         }
-
-        this.setState({ inventory });
-    }
-
-    mouseover(e) {
-        this.hoverItem(e);
-    }
-
-    hoverWhileContextMenu(e) {
-        const classList = e.target.classList;
-
-        if (this.state.context && !classList.contains('contextOption')) {
-            document.removeEventListener('mouseover', this.hoverContextMenu);
-            this.setState({ context: false });
-            return;
-        } else if (this.state.context) {
-            return;
-        }
-    }
-
-    hoverItem(e) {
-        const classList = e.target.classList;
-        const id = e.target.id;
-
-        if (!classList.contains('item')) {
-            this.setState({ draggedItem: -1 });
-            return;
-        }
-
-        if (this.state.held) {
-            if (this.state.draggedItem === parseInt(id)) return;
-            this.setState({ draggedItem: parseInt(id) });
-            return;
-        }
-    }
-
-    mousemove(e) {
-        if (this.state.context) return;
-        this.setState({ x: e.clientX, y: e.clientY });
-    }
-
-    mousedown(e) {
-        if (this.state.context) return;
-        // Right-Click
-        if (e.which === 3) {
-            this.rightClick(e);
-            return;
-        } else {
-            this.leftClick(e);
-            return;
-        }
-    }
-
-    leftClick(e) {
-        const list = e.target.classList;
-        if (!list.contains('item') || list.contains('item-place')) return;
-        if (Date.now() < this.state.doubleClickTime) {
-            this.doubleClick(e);
-            return;
-        }
-
-        if (this.state.shiftModifier) {
-            this.shiftClick(e);
-            return;
-        }
-
-        document.addEventListener('mousemove', this.mouseMoveEvent);
-        this.setState({
-            held: true,
-            doubleClickTime: Date.now() + 200,
-            heldItem: e.target.id
-        });
-    }
-
-    rightClick(e) {
-        if (this.state.context) return;
-        const list = e.target.classList;
-        if (!list.contains('item') || list.contains('item-place')) return;
-
-        document.addEventListener('mouseover', this.hoverContextMenu);
-        this.setState({
-            context: true,
-            contextItem: parseInt(e.target.id),
-            contextX: e.clientX - 75,
-            contextY: e.clientY - 15
-        });
-    }
-
-    mouseup(e) {
-        if (this.state.context) return;
-        if (e.which === 3) {
-            return;
-        }
-
-        const list = e.target.classList;
-        document.removeEventListener('mousemove', this.mouseMoveEvent);
-        if (!list.contains('item') && !list.contains('item-place')) {
-            document.removeEventListener('mousemove', this.mouseMoveEvent);
-            this.setState({ held: false, heldItem: -1, draggedItem: -1 });
-            return;
-        }
-
-        this.moveItem(parseInt(this.state.heldItem), parseInt(e.target.id));
-    }
-
-    keydown(e) {
-        if (this.state.context) return;
-        // Shift
-        if (e.keyCode === 16) {
-            this.setState({ shiftModifier: true });
-        }
-    }
-
-    keyup(e) {
-        if (this.state.context) return;
-        if (e.keyCode === 16) {
-            this.setState({ shiftModifier: false });
-        }
-    }
-
-    moveItem(heldIndex, dropIndex) {
-        if (heldIndex <= -1 || dropIndex <= -1) {
-            document.removeEventListener('mousemove', this.mouseMoveEvent);
-            this.setState({ held: false, heldItem: -1, draggedItem: -1 });
-            return;
-        }
-
-        if (heldIndex === dropIndex) {
-            document.removeEventListener('mousemove', this.mouseMoveEvent);
-            this.setState({ held: false, heldItem: -1, draggedItem: -1 });
-            return;
-        }
-
-        let inventory = [...this.state.inventory];
-
-        if ('alt' in window) {
-            alt.emit('inventory:SwapItem', heldIndex, dropIndex);
-        }
-
-        if (inventory[heldIndex] && inventory[dropIndex]) {
-            const heldName = inventory[heldIndex].name;
-            const dropName = inventory[dropIndex].name;
-
-            if (heldName === dropName) {
-                inventory[dropIndex].quantity += inventory[heldIndex].quantity;
-                inventory[heldIndex] = null;
-            }
-        } else {
-            inventory[heldIndex] = inventory[dropIndex];
-            inventory[dropIndex] = inventory[heldIndex];
-        }
-
-        document.removeEventListener('mousemove', this.mouseMoveEvent);
-        this.setState({ held: false, heldItem: -1, inventory, draggedItem: -1 });
-    }
-
-    doubleClick(e) {
-        if (!e.target.id) {
-            this.setState({
-                held: false,
-                heldItem: -1,
-                draggedItem: -1
-            });
-            document.removeEventListener('mousemove', this.mouseMoveEvent);
-            return;
-        }
-
-        document.removeEventListener('mousemove', this.mouseMoveEvent);
-        let inventory = [...this.state.inventory];
-        inventory[parseInt(e.target.id)] = null;
-
-        if ('alt' in window) {
-            alt.emit('inventory:Use', this.state.inventory[parseInt(e.target.id)].hash);
-        } else {
-            console.log('Double Clicked');
-        }
-
-        this.setState({
-            held: false,
-            heldItem: -1,
-            draggedItem: -1,
-            inventory
-        });
-    }
-
-    shiftClick(e) {
-        if (!this.state.inventory[parseInt(e.target.id)]) return;
-        if (this.state.inventory[parseInt(e.target.id)].quantity <= 1) return;
-
-        if ('alt' in window) {
-            alt.emit('inventory:Split', this.state.inventory[parseInt(e.target.id)].hash);
-        } else {
-            console.log('Shift Clicked');
-        }
-
-        let inventory = [...this.state.inventory];
-        inventory[parseInt(e.target.id)] = null;
         this.setState({ inventory });
     }
 
@@ -913,204 +663,178 @@ class Inventory extends Component {
         return item;
     }
 
-    useItem() {
-        if (!this.state.inventory[this.state.contextItem]) return;
-
+    useItem(e) {
+        const item = this.state.inventory[parseInt(e.target.id)];
+        if (!item) return;
         if ('alt' in window) {
-            alt.emit('inventory:Use', this.state.inventory[this.state.contextItem].hash);
+            alt.emit('inventory:Use', item.hash);
+            this.mockRemove(parseInt(e.target.id));
+        } else {
+            this.mockRemove(parseInt(e.target.id));
+        }
+    }
+
+    dropItem(e) {
+        const item = this.state.inventory[parseInt(e.target.id)];
+        if (!item) return;
+        if ('alt' in window) {
+            alt.emit('inventory:Drop', item.hash);
+            this.mockRemove(parseInt(e.target.id));
+        } else {
+            this.mockRemove(parseInt(e.target.id));
+        }
+    }
+
+    destroyItem(e) {
+        const item = this.state.inventory[parseInt(e.target.id)];
+        if (!item) return;
+        if ('alt' in window) {
+            alt.emit('inventory:Destroy', item.hash);
+            this.mockRemove(parseInt(e.target.id));
+        } else {
+            this.mockRemove(parseInt(e.target.id));
+        }
+    }
+
+    splitItem(e) {
+        const item = this.state.inventory[parseInt(e.target.id)];
+        if (!item) return;
+        if ('alt' in window) {
+            alt.emit('inventory:Split', item.hash);
+            this.mockRemove(parseInt(e.target.id));
+        } else {
+            this.mockRemove(parseInt(e.target.id));
+        }
+    }
+
+    mockRemove(index) {
+        const items = [...this.state.inventory];
+        items[index] = null;
+        this.setState({ inventory: items });
+    }
+
+    renderItem({ item, index, itemCount }) {
+        if (!item) return;
+        if (this.state.search.length >= 2) {
+            if (!item.name.includes(this.state.search)) return;
         }
 
-        let inventory = [...this.state.inventory];
-        inventory[parseInt(this.state.contextItem)] = null;
-
-        document.removeEventListener('mouseover', this.hoverContextMenu);
-        this.setState({
-            context: false,
-            contextItem: -1,
-            inventory
-        });
-    }
-
-    dropItem() {
-        if (!this.state.inventory[this.state.contextItem]) return;
-
-        if ('alt' in window) {
-            alt.emit('inventory:Drop', this.state.inventory[this.state.contextItem].hash);
+        let icon;
+        if (item && item.icon) {
+            icon = icons.includes(item.icon) ? item.icon : 'unknown';
         }
 
-        let inventory = [...this.state.inventory];
-        inventory[this.state.contextItem] = null;
-
-        document.removeEventListener('mouseover', this.hoverContextMenu);
-        this.setState({ context: false, contextItem: -1, inventory });
-    }
-
-    destroyItem() {
-        if (!this.state.inventory[this.state.contextItem]) return;
-
-        if ('alt' in window) {
-            alt.emit(
-                'inventory:Destroy',
-                this.state.inventory[this.state.contextItem].hash
-            );
-        }
-
-        let inventory = [...this.state.inventory];
-        inventory[this.state.contextItem] = null;
-
-        document.removeEventListener('mouseover', this.hoverContextMenu);
-        this.setState({ context: false, contextItem: -1, inventory });
-    }
-
-    renameItem() {
-        document.removeEventListener('mouseover', this.hoverContextMenu);
-        this.setState({ context: false });
-    }
-
-    contextMenu({ x, y }) {
         return h(
             'div',
-            { class: 'contextMenu', style: `left: ${x}px; top: ${y}px;` },
+            { class: 'item' },
             h(
-                'button',
-                { class: 'contextOption', onclick: this.useItem.bind(this) },
-                'Use'
+                'div',
+                { class: 'icon' },
+                h('svg', {
+                    type: 'image/svg+xml',
+                    style: `background: url('../icons/${icon}.svg');`
+                })
             ),
+            h('div', { class: 'item-name' }, `${item.quantity}x - ${item.name}`),
             h(
-                'button',
-                { class: 'contextOption', onclick: this.dropItem.bind(this) },
-                'Drop'
-            ),
-            h(
-                'button',
-                { class: 'contextOption', onclick: this.destroyItem.bind(this) },
-                'Destroy'
-            ),
-            h(
-                'button',
-                { class: 'contextOption', onclick: this.renameItem.bind(this) },
-                'Rename'
+                'div',
+                { class: 'buttons' },
+                h(
+                    'button',
+                    { class: 'item-button', id: index, onclick: this.useItem.bind(this) },
+                    'Use'
+                ),
+                h(
+                    'button',
+                    {
+                        class: 'item-button',
+                        id: index,
+                        onclick: this.dropItem.bind(this)
+                    },
+                    'Drop'
+                ),
+                h(
+                    'button',
+                    {
+                        class: 'item-button',
+                        id: index,
+                        onclick: this.destroyItem.bind(this)
+                    },
+                    'Destroy'
+                ),
+                item.quantity >= 2 &&
+                    itemCount <= 27 &&
+                    h(
+                        'button',
+                        {
+                            class: 'item-button',
+                            id: index,
+                            onclick: this.splitItem.bind(this)
+                        },
+                        'Split'
+                    ),
+                item.quantity >= 2 &&
+                    itemCount >= 28 &&
+                    h(
+                        'button',
+                        {
+                            class: 'item-button disabled',
+                            id: index
+                        },
+                        'Split'
+                    ),
+                item.quantity <= 1 &&
+                    h('button', { class: 'item-button disabled', id: index }, 'Split')
             )
         );
     }
 
-    renderItemHeld({ x, y, item }) {
-        let icon;
-        if (item && item.icon) {
-            icon = icons.includes(item.icon) ? item.icon : 'unknown';
-        }
-
-        return h(
-            'div',
-            {
-                class: 'item-held',
-                style: `left: ${x}px; top: ${y}px;`
-            },
-            h('svg', {
-                type: 'image/svg+xml',
-                style: `background: url('../icons/${icon}.svg');`
-            })
-        );
+    onInputEvent(e) {
+        this.setState({ search: e.target.value });
     }
 
-    renderItem({ index, item, draggedItem, mouseover, mousedown, mouseup, held }) {
-        let icon;
-        if (item && item.icon) {
-            icon = icons.includes(item.icon) ? item.icon : 'unknown';
-        }
-
-        let classData = 'item';
-        if (!item) {
-            classData += ' item-place';
-        }
-
-        if (index === draggedItem) {
-            classData += ' item-hovered';
-        }
-
-        const newItem = h(
-            'div',
-            {
-                class: classData,
-                id: index,
-                onmouseover: mouseover.bind(this),
-                onmouseup: mouseup.bind(this),
-                onmousedown: mousedown.bind(this)
-            },
-            item &&
-                h('svg', {
-                    type: 'image/svg+xml',
-                    style: `background: url('../icons/${icon}.svg');`
-                }),
-            item && !held && h('div', { class: 'itemname' }, item.name),
-            item && held && h('div', { class: 'itemnameheld' }, item.name),
-            item &&
-                !held &&
-                parseInt(item.quantity) >= 2 &&
-                h(
-                    'div',
-                    { class: 'itemquantity' },
-                    `${parseInt(item.quantity).toLocaleString()}`
-                ),
-            item &&
-                held &&
-                parseInt(item.quantity) >= 2 &&
-                h(
-                    'div',
-                    { class: 'itemquantityheld' },
-                    `${parseInt(item.quantity).toLocaleString()}`
-                ),
-            item &&
-                !held &&
-                h(
-                    'div',
-                    { class: 'tooltip' },
-                    h(
-                        'span',
-                        { class: 'tooltiptext' },
-                        h('h4', {}, item.name),
-                        h('p', {}, `Base: ${item.base}`)
-                    )
-                ),
-            !item && 'empty'
-        );
-        return newItem;
-    }
-
-    renderItems() {
+    renderItems({ setInputFocused, setInputUnfocused }) {
+        const validItems = this.state.inventory.filter(item => item);
         const items = this.state.inventory.map((item, index) => {
             if (index >= 28) return;
-            return h(this.renderItem, {
+            return h(this.renderItem.bind(this), {
                 item,
                 index,
-                draggedItem: this.state.draggedItem,
-                mouseover: this.mouseover.bind(this),
-                mousedown: this.mousedown.bind(this),
-                mouseup: this.mouseup.bind(this),
-                held: this.state.held
+                itemCount: validItems.length
             });
         });
 
-        return h(
-            'div',
-            { class: 'inventory' },
-            items,
-            this.state.held &&
-                h(this.renderItemHeld, {
-                    x: this.state.x,
-                    y: this.state.y,
-                    item: this.state.inventory[parseInt(this.state.heldItem)]
-                }),
-            this.state.context &&
-                h(this.contextMenu.bind(this), {
-                    x: this.state.contextX,
-                    y: this.state.contextY
+        items.unshift(
+            h(
+                'div',
+                { class: 'search-wrapper' },
+                h('input', {
+                    class: 'search',
+                    placeholder: 'Search for item...',
+                    onfocusin: setInputFocused,
+                    onfocusout: setInputUnfocused,
+                    onchange: this.onInputEvent.bind(this),
+                    value: this.state.search
                 })
+            )
         );
+
+        items.unshift(
+            h(
+                'div',
+                { class: 'item-stats-wrapper' },
+                h('div', { class: 'total-items' }, `${validItems.length}/28`)
+            )
+        );
+
+        return h('div', { class: 'inventory' }, items);
     }
 
-    render() {
-        return h(this.renderItems.bind(this));
+    render(props, state) {
+        return h(this.renderItems.bind(this), {
+            setInputFocused: props.setInputFocused,
+            setInputUnfocused: props.setInputUnfocused
+        });
     }
 }
 
@@ -1121,32 +845,39 @@ class Stats extends Component {
             stats: []
         };
         this.addStatBind = this.addStat.bind(this);
+        this.clearStatsBind = this.clearStats.bind(this);
     }
 
     componentDidMount() {
         if ('alt' in window) {
             alt.on('inventory:AddStat', this.addStatBind);
+            alt.on('inventory:ClearStats', this.clearStatsBind);
             alt.emit('inventory:FetchStats');
         } else {
-            this.addStat('agility', 1, 55);
+            this.addStat('agility', 1, 1);
             this.addStat('cooking', 25, 859215);
-            this.addStat('crafting', 25, 859215);
-            this.addStat('mechanic', 25, 859215);
+            this.addStat('crafting', 25, 459215);
+            this.addStat('mechanic', 25, 555215);
             this.addStat('notoriety', 25, 859215);
-            this.addStat('nobility', 25, 859215);
+            this.addStat('nobility', 25, 852215);
             this.addStat('fishing', 25, 859215);
-            this.addStat('smithing', 25, 859215);
+            this.addStat('smithing', 25, 651215);
             this.addStat('woodcutting', 25, 859215);
-            this.addStat('medicine', 25, 859215);
+            this.addStat('medicine', 25, 849215);
             this.addStat('gathering', 25, 859215);
-            this.addStat('mining', 25, 859215);
+            this.addStat('mining', 25, 739215);
         }
     }
 
     componentWillUnmount() {
         if ('alt' in window) {
             alt.off('inventory:AddStat', this.addStatBind);
+            alt.off('inventory:ClearStats', this.clearStatsBind);
         }
+    }
+
+    clearStats() {
+        this.setState({ stats: [] });
     }
 
     addStat(...args) {
@@ -1172,12 +903,25 @@ class Stats extends Component {
             const currentXP = parseInt(stat.xp);
             const xpForNextLvl = getXP(getLevel(currentXP) + 1);
             const xpDifference = xpForNextLvl - currentXP;
+            const progress = currentXP / xpForNextLvl;
+            const color = {
+                r: Math.floor(Math.random() * 155) + 100,
+                g: Math.floor(Math.random() * 155) + 100,
+                b: Math.floor(Math.random() * 155) + 100
+            };
 
             return h(
                 'div',
                 { class: 'stat' },
                 h('div', { class: 'statlvl' }, stat.lvl),
                 h('div', { class: 'statname' }, stat.name),
+                h('div', {
+                    class: 'progressbar',
+                    style: `width: ${progress * 100}% !important; background: rgba(${
+                        color.r
+                    }, ${color.g}, ${color.b});`
+                }),
+                h('div', { class: 'description' }, skillDescriptions[stat.name]),
                 h('svg', {
                     type: 'image/svg+xml',
                     style: `background: url('../icons/${icon}.svg');`

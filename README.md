@@ -4,183 +4,27 @@ Remember to 🌟 this Github if you 💖 it.
 
 ---
 
-### THIS IS A WORK IN PROGRESS AND IS NOT COMPLETE IN ANY WAY
+### Sponsor this Project to keep it **FREE**
 
-Open Roleplay is a base gamemode for Roleplay servers. It will include the ideal functionality to get the base ground work for a roleplay gamemode started.
+[Github Sponsorship Program](https://www.github.com/sponsors/stuyk)
 
-[Official O:RP Discord](https://discord.gg/gVfJkcs)
-
----
-
-**IMPORTANT** If you are not a developer; this may not be the project for you. There is some general configuration that needs to be done and understanding code is important.
-
-**Roadmap**
-
--   [x] PostgreSQL Integration
--   [x] Login and Registration
--   [x] Player
-    -   [x] Character Facial Customization
-    -   [x] Roleplay Name Formatting
-    -   [x] Barbershop
-    -   [x] Clothing Shop
-    -   [ ] Tattoos
-    -   [x] Nametags / Character Names
--   [x] Character Inventory System
-    -   [x] Item Configuration
-    -   [x] Item Drops
-    -   [x] Item Pickups
-    -   [x] Stack Splitting (Shift + Left Click)
-    -   [x] Stack Drops
--   [x] Vehicle System
--   [x] Job System
-    -   [x] Mini Game Engine
-    -   [x] Example Job Configuration
-    -   [x] Job System Types
-    -   [x] Driving Test
-    -   [x] Taxi Job
-    -   [x] Mechanic Job
-    -   [x] Vigorium Fields
-    -   [x] Kevlarium Fields
-    -   [x] Wood Cutting
-    -   [x] Mining
-    -   [x] Vigorium Refinery
-    -   [x] Kevlarium Refinery
-    -   [x] Driving Test
-    -   [x] 10x Agility Training Courses
-    -   [x] Smithing
-    -   [ ] Weapon Crafting Points
--   [x] Vehicle System
-    -   [x] Vehicle Customization
-    -   [x] Vehicle Fuel System
-    -   [x] Vehicle Vendor
-    -   [ ] Destroy Vehicles
-    -   [ ] Sell Vehicles
-    -   [x] Track Vehicles
--   [ ] Door System
-    -   [ ] House Type
-    -   [ ] Shop System
-        -   [ ] Gun Store
-        -   [ ] Food Store
-        -   [ ] Medical Clinic
--   [ ] Door Sales System
--   [ ] Administrative Toolkit
--   [x] Phone System
--   [x] Currency System
--   [x] ATM / Bank System
-    -   [ ] Transfer Money
--   [ ] Faction System
--   [x] Basic Anticheat
-    -   [x] Anti-Gun Spawn
-    -   [ ] Anti-Teleport
-    -   [ ] Anti-Speedhack
-    -   [ ] Anti-Health Hack
-    -   [ ] Anti-Armour Hack
-    -   [x] Anti-Explosion Hack
--   [ ] Time & Weather
-    -   [ ] Time Sync (Needs Rework)
-    -   [ ] Weather Sync (Needs Rework)
--   [x] Interaction System
-    -   [x] Interaction for Vehicles
-    -   [ ] Interaction for Players
-        -   [ ] Give Money
-        -   [ ] Burn Money
-    -   [x] Interaction for Objects
-    -   [x] Interaction for Self
-        -   [x] Animations for Sitting
--   [x] Player Death Handling
--   [x] Taxation
--   [x] Animation Manager
--   [x] Context Menu of Animations
--   [x] Custom Sounds! Blat!
--   [x] Custom Chat
-    -   [x] Custom Chat Commands
-    -   [x] Custom Chat Colors
-    -   [ ] Custom Chat Notification Functions / Clickables
-    -   [ ] Custom Chat is Repositionable?
-    -   [x] Ranged Chat
-    -   [x] Roleplay Commands (/me, /do, /b, /cc, /d20, /flipcoin, /sf)
--   [x] Experience Curve for Skill System
--   [ ] Skill System
-
-    -   [x] Agility (Sprint Modifier)
-        -   [x] Increase Stamina
-        -   [x] Increase Level of Stamina
-        -   [x] Run Longer / Swim Longer
-    -   [ ] Cooking (Craft Better Food)
-        -   [ ] Create Better Healing Food
-        -   [ ] Create Better Healing Drinks
-    -   [ ] Crafting (Better Quality Items)
-        -   [ ] Craft Weapons
-        -   [ ] Craft Better Pickaxes
-        -   [ ] Craft Better Gathering Items
-        -   [ ] Craft Better Hammers
-        -   [ ] Craft Repair Kits
-        -   [ ] All Crafting Items Take Metal
-        -   [ ] All Crafting Items Take Wood
-    -   [x] Fishing
-        -   [x] Use a fishing rod to fish ANYWHERE.
-        -   [ ] Fish Loot Table
-    -   [ ] Medicine (Health Healed on Player Revivals)
-        -   [ ] Heal users quicker.
-        -   [ ] Revive users quicker.
-    -   [x] Mining (Gather more items from Mining, use better equipment)
-        -   [x] Basically better pickaxes that mine faster.
-        -   [x] Unrefined Metal
-        -   [x] Refined Metal
-    -   [x] Notoriety (Gained Through Criminal Jobs, access to better jobs. Create a gang)
-        -   [x] Lose nobility xp by doing notoriety activities.
-        -   [ ] Gain access to create a gang past a certain level.
-        -   [x] Lose XP three times as fast when doing good things.
-        -   [ ] Drug Creation Jobs
-        -   [ ] Gun Creation Jobs
-        -   [ ] Illegal Shipment Jobs
-        -   [ ] Hitman Jobs (95+)
-    -   [ ] Nobility (Opposite of Notoriety, access to better jobs / factions.)
-        -   [ ] Lose notoriety xp by doing nobility activities.
-        -   [ ] Gain access to factions past a certain level. ie. Police Trainee
-        -   [ ] Lose XP three times as fast when doing bad things.
-        -   [ ] Medicinal Jobs
-        -   [ ] Police Jobs
-        -   [ ] Firefighter Jobs
-    -   [x] Gathering (Gather more items for Drug Crafting)
-        -   [x] Basically use better gathering items.
-    -   [x] Mechanic (Repair vehicles quicker; access to repair anywhere at 75+)
-        -   [ ] Repair Quicker on Mechanic Job
-        -   [ ] Use Repair Kits After Level 75+
-    -   [x] Smithing
-        -   [x] Craft Metal for Weapons / Tools
-        -   [x] Refined Metal
-    -   [x] Woodcutting
-        -   [x] Craft Refined Wood for Weapons / Tools
-        -   [x] Unrefined Wood
-        -   [x] Refined Wood
-
--   [x] Drug System
-    -   [x] Drugs for Armor (Kevlarium)
-    -   [x] Drugs for Fast Stamina Boost (Vigorium)
-    -   [ ] Drug Jobs 3 jobs for each type.
--   [x] Playing Hours Stats
--   [ ] Loyalty Program
-    -   [ ] Extra Housing Slots for Hours Played
-    -   [ ] Extra Backpack Slots for Hours Played
-    -   [ ] Extra Shop Slots for Hours Played
-    -   [ ] Extra Vehicle Slots for Hours Played
--   [x] Police Officer Utilities
-    -   [x] Cuffing / Binding
-    -   [x] Mobile Data Computer
-    -   [x] Frisking
-    -   [x] Charges for Illegal Activities
-    -   [x] Arrest Times
-    -   [ ] Prison Transfer Job
-    -   [ ] High Speed Pursuit Unit
-
-I will not be providing direct support for this gamemode; if you have an issue or come across actual functionality issues please raise an issue in the **issues** tab. Otherwise; additional help can be found by subscribing through [my twitch page and joining discord](https://www.twitch.tv/stuyksoft/).
-
----
+Open Roleplay is a base gamemode for Roleplay servers.
+Open Roleplay is the base framework for my server: [alt:V Life](https://discord.gg/fc7P9eH).
+Open Roleplay has its own [Official Discord](https://discord.gg/WbzTJXW).
 
 ### Licensing
 
-If you'd like to remove the splash screens at any point; we can negotiate at a price. However, you will be responsible for removing them and not me. Otherwise, just leave the splash screens alone. This is a free framework and the least you can do is give credit.
+If you'd like to remove the splash screens at any point; we can negotiate at a price. However, you will be responsible for removing them and not me. Otherwise, just leave the splash screens alone. This is a free framework and the least you can do is give credit. You are also required to put **ORP** in your gamemode for your alt:V server configuration. You did not write this gamemode; and it is not your **custom gamemode**. **Put credit where credit is due.**
+
+---
+
+### Feature List and Roadmap
+
+You can find a full list of features and the roadmap [here](https://docs.google.com/document/d/19f9xTn6m3qVfUZYV6cQ8dMstLLdfYC2BavTV7YpzfLc/).
+
+**IMPORTANT** If you are not a developer; this may not be the project for you. There is some general configuration that needs to be done and understanding code is important.
+
+I **will not** be providing direct support for this gamemode; if you have an issue or come across actual functionality issues please raise an issue in the **issues** tab. Otherwise; additional help can be found by subscribing through [my twitch page](https://www.twitch.tv/stuyksoft/) and then joining the [Discord Group](https://discord.gg/gVfJkcs)
 
 ---
 
@@ -191,20 +35,8 @@ If you'd like to remove the splash screens at any point; we can negotiate at a p
 Tab --------> Press to Toggle Cursor
 Tab + RMB  -> Show Context Menu on User
 Tab + LMB  -> Select Context Option
-E ----------> Most clothing shops, jobs, etc. to interact.
-I ----------> Toggle Inventory
-T ----------> Chat
-ESC --------> Exit Most Menus
-
-// Vehicles
-Shift + F  -> Leave Engine Running
-Shift + G  -> Toggle Engine
-Shift + H  -> Toggle Lock
-
-// Utility
-Shift + F1 -> Get Interior Info in Console
-Shift + F2 -> Get Position
-Shift + F7 -> Hide Chat
+T ----------> Open Chat
+F1 ---------> Help Menu
 ```
 
 ---
@@ -218,15 +50,18 @@ Shift + F7 -> Hide Chat
 -   Once installed you need to create a username and password for your database; and create a database called 'altv' or something else if you know what you're doing. **PAY ATTENTION HERE YOU'LL NEED THIS INFO**
 
 **Creating on Windows with pgAdmin4**
+
 Where to navigate:
-![](https://i.imgur.com/FBBeMTt.png)
+
+[https://i.imgur.com/FBBeMTt.png](https://i.imgur.com/FBBeMTt.png)
 
 Postgres is the username for this database; and altv is the name:
-![](https://i.imgur.com/FaEmnvg.png)
+
+[https://i.imgur.com/FaEmnvg.png](https://i.imgur.com/FaEmnvg.png)
 
 After; it should be running automatically in your services on windows. You can always restart your database through your Task Manager.
 
-![](https://i.imgur.com/6pA8PWB.png)
+[https://i.imgur.com/6pA8PWB.png](https://i.imgur.com/6pA8PWB.png)
 
 **Creating on Linux with Terminal ( UBUNTU 18.04 (Don't use 16.04 it's a pain in the ass.) )**
 
@@ -260,8 +95,62 @@ After; it should be running automatically in your services on windows. You can a
 
 ---
 
--   Download the latest version of this resource.
+-   Open a Power Shell or Command Prompt or Terminal
+
+-   Download the latest version of this resource (100% Recommend CLONING the REPO with GIT).
+
+-   After CLONING, CD into the repo through the same command prompt.
 
 -   Open a command prompt and run `npm run orp`. **FOLLOW THE INSTRUCTIONS CAREFULLY ON PROMPT**.
 
+-   When you get to the Discord Setup; make sure you hit 'yes' if this is a new server.
+
+### Basic Discord Bot Setup
+
+**Please Create a Discord Application for your Login System.**
+
+**Please Visit: https://discordapp.com/developers/applications/**
+
+-   Inside of page you need to create a Discord Application and turn it into a bot and copy the bot secret.
+
+-   You also **MUST** add this bot to your own server.
+
+1. Hit New Application
+2. Set the Name for Your Bot / Application
+3. Click on the `Bot` tab.
+4. Transform your Application into a bot.
+5. Name your bot.
+6. Tick `Administrator` or just `Send/Read Messages`
+7. Copy the bots secret token.
+8. Make sure the bot is not public.
+9. Navigate to oAuth2 tab. Tick `bot` in scopes.
+10. Copy the URL inside of scopes. Paste in browser.
+11. Add the bot to your designated Discord.
+
+-   Make sure to save changes.
+
 -   Run `altv-server.exe` or `./start.sh`. If you're on Linux you may need to set permission for `altv-server`.
+
+-   Join your server.
+
+-   Copy the Code
+
+-   PM the Bot you setup with `!login <code>`
+
+### Installation using Docker
+
+OpenRP includes support for building and running the alt:V and PostgreSQL server using Docker.  Included is a docker-compose.yml which contains many variables that you will need to edit.  Any changes you make will require you to rebuild the altv-openrp container.
+
+To build new containers, first edit the docker-compose.yml file and fill in all the details for the altv server and discord information, and then build with docker-compose.  Note: You must agree with OpenRP terms of service by passing TOS_AGREE=true as a build argument.
+
+```
+docker-compose build --build-arg TOS_AGREE=true
+```
+
+To run the containers:
+
+```
+docker-compose up
+```
+
+Please see Docker and Docker-Compose documentation for more options.

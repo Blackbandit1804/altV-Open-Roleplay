@@ -4,6 +4,11 @@ import * as native from 'natives';
 import { distance } from '/client/utility/vector.mjs';
 import { playAnimation } from '/client/systems/animation.mjs';
 import { appendContextItem, setContextTitle } from '/client/panels/hud.mjs';
+import { findDoor } from '/client/systems/doors.mjs';
+import { getLevel } from '/client/systems/xp.mjs';
+import { getItemByEntity } from '/client/systems/inventory.mjs';
+import { getResourceDataByCoord } from '/client/systems/resource.mjs';
+import { getObjectById } from '/client/systems/objectextender.mjs';
 
 alt.log('Loaded: client->contextmenus->object.mjs');
 
@@ -126,6 +131,9 @@ let objectInteractions = {
     1114264700: {
         func: sodaMachine
     },
+    2977731501: {
+        func: sodaMachine
+    },
     4216340823: {
         func: payPhone
     },
@@ -202,6 +210,9 @@ let objectInteractions = {
     1933174915: {
         func: gasPump
     },
+    4130089803: {
+        func: gasPump
+    },
     3203580969: {
         func: hospitalBed
     },
@@ -213,6 +224,75 @@ let objectInteractions = {
     },
     3628385663: {
         func: fireExtinguisher
+    },
+    2684801972: {
+        func: fireExtinguisher
+    },
+    1693207013: {
+        func: dynamicDoor
+    },
+    2446598557: {
+        func: dynamicDoor
+    },
+    3229200997: {
+        func: cookingSource
+    },
+    286252949: {
+        func: cookingSource
+    },
+    1903501406: {
+        func: cookingSource
+    },
+    977744387: {
+        func: cookingSource
+    },
+    3640564381: {
+        func: candyDispenser
+    },
+    785076010: {
+        func: candyDispenser
+    },
+    4022605402: {
+        func: hotDogDispenser
+    },
+    2713464726: {
+        func: hotDogDispenser
+    },
+    1099892058: {
+        func: waterDispenser
+    },
+    858993389: {
+        func: fruitDispenser
+    },
+    2913180574: {
+        func: fruitDispenser
+    },
+    3605261854: {
+        func: fruitDispenser
+    },
+    3278751538: {
+        func: fruitDispenser
+    },
+    3492728915: {
+        func: fruitDispenser
+    },
+    1129053052: {
+        func: burgerDispenser
+    },
+    1340115820: {
+        func: itemDrop
+    },
+    904554844: {
+        func: toolBench
+    },
+    31071109: {
+        func: toolBench
+    },
+    525797972: {
+        func: treeParser
+    },
+    4146332269: {
+        func: rockParser
     }
 };
 
@@ -224,9 +304,15 @@ chairs.forEach(item => {
 
 alt.on('menu:Object', ent => {
     if (alt.Player.local.getMeta('arrest')) return;
-    if (alt.Player.local.vehicle) return;
-
     let model = native.getEntityModel(ent);
+
+    if (!alt.Player.local.vehicle) {
+        const running = native.isPedRunning(alt.Player.local.scriptID);
+        const walking = native.isPedWalking(alt.Player.local.scriptID);
+        if (!running && !walking) {
+            native.taskTurnPedToFaceEntity(alt.Player.local.scriptID, ent, 500);
+        }
+    }
 
     // find interaction; and call it if necessary.
     let interaction = objectInteractions[model];
@@ -243,31 +329,37 @@ function unknown(ent) {
 }
 
 function sodaMachine(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Buy Soda', true, 'use:SodaMachine', {});
     setContextTitle(`Soda Machine`);
 }
 
 function coffeeMachine(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Buy Coffee', true, 'use:CoffeeMachine', {});
     setContextTitle(`Coffee Machine`);
 }
 
 function payPhone(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Use Phone', true, 'use:PayPhone', {});
     setContextTitle('Pay Phone');
 }
 
 function metroTicketMachine(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Buy Ticket', true, 'use:MetroTicketMachine', {});
     setContextTitle('Metro Ticket Machine');
 }
 
 function postalBox(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Use', true, 'use:PostalBox', {});
     setContextTitle('Postal Box');
 }
 
 function dumpster(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Hide', true, 'use:HideDumpster', {});
     appendContextItem('Search', true, 'use:SearchDumpster', {});
     appendContextItem('Leave', true, 'use:LeaveDumpster', {});
@@ -275,6 +367,7 @@ function dumpster(ent) {
 }
 
 function atm(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem('Use', true, 'use:Atm', {});
     setContextTitle('ATM');
 }
@@ -290,6 +383,7 @@ function mineshaft(ent) {
 }
 
 function humanelabs(ent) {
+    if (alt.Player.local.vehicle) return;
     const dist = distance(
         { x: 3626.514404296875, y: 3752.325439453125, z: 28.515737533569336 },
         alt.Player.local.pos
@@ -300,6 +394,8 @@ function humanelabs(ent) {
 }
 
 function doorControl(ent) {
+    if (alt.Player.local.vehicle) return;
+
     const pos = native.getEntityCoords(ent, false);
     const type = native.getEntityModel(ent);
     const [_, locked, _2] = native.getStateOfClosestDoorOfType(
@@ -321,6 +417,7 @@ function doorControl(ent) {
 }
 
 function hospitalBed(ent) {
+    if (alt.Player.local.vehicle) return;
     let pos = native.getEntityCoords(ent, false);
     let heading = native.getEntityHeading(ent) + 180.0;
 
@@ -339,6 +436,7 @@ function hospitalBed(ent) {
 }
 
 function chair(ent) {
+    if (alt.Player.local.vehicle) return;
     native.freezeEntityPosition(ent, true);
     let pos = native.getEntityCoords(ent, false);
     let heading = native.getEntityHeading(ent) + 180.0;
@@ -369,6 +467,7 @@ function chair(ent) {
 }
 
 function clearSit(key) {
+    if (alt.Player.local.vehicle) return;
     if (key === 'W'.charCodeAt(0)) {
         alt.off('keyup', clearSit);
         native.clearPedTasksImmediately(alt.Player.local.scriptID);
@@ -378,11 +477,174 @@ function clearSit(key) {
 }
 
 function gasPump(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem(`Fuel Vehicle`, false, 'vehicle:Fuel', {});
     setContextTitle(`Gas Pump`);
 }
 
 function fireExtinguisher(ent) {
+    if (alt.Player.local.vehicle) return;
     appendContextItem(`Fire Extinguisher`, true, 'use:FireExtinguisher', {});
     setContextTitle(`Fire Extinguisher`);
+}
+
+function dynamicDoor(ent) {
+    const door = findDoor(ent);
+    if (!door) return;
+
+    appendContextItem('Use', true, 'use:UseDynamicDoor', { id: door.id });
+    appendContextItem(`Toggle Lock: ${door.lockstate}`, true, 'use:LockDynamicDoor', {
+        id: door.id
+    });
+
+    if (door.salePrice >= 0) {
+        appendContextItem(
+            `Purchase for $${door.salePrice}`,
+            true,
+            'use:PurchaseDynamicDoor',
+            {
+                id: door.id
+            }
+        );
+    }
+
+    setContextTitle(`${door.id} - Owner: ${door.guid}`);
+}
+
+function cookingSource(ent) {
+    appendContextItem('Cooking Menu', false, 'crafting:CookingMenu');
+    setContextTitle(`Cooking Source`);
+}
+
+function candyDispenser(ent) {
+    appendContextItem(`Buy Candy`, true, 'use:CandyDispenser', {});
+    setContextTitle(`Candy Dispensesr`);
+}
+
+function hotDogDispenser(ent) {
+    appendContextItem(`Buy Hotdog`, true, 'use:HotdogDispenser', {});
+    setContextTitle(`Hot Dog Vendor`);
+}
+
+function waterDispenser(ent) {
+    const inventory = JSON.parse(alt.Player.local.getMeta('inventory'));
+    const waterJugs = inventory.filter(item => {
+        if (item && item.key === 'jug') return item;
+    });
+
+    if (waterJugs.length <= 0) {
+        setContextTitle(`Water Dispenser`);
+        return;
+    }
+
+    const hashes = [];
+    waterJugs.forEach(jug => {
+        hashes.push(jug.hash);
+    });
+
+    appendContextItem(`Fill All Water Jugs`, true, 'use:WaterDispenser', {
+        hashes: hashes,
+        position: native.getEntityCoords(ent, false)
+    });
+    setContextTitle(`Water Dispenser`);
+}
+
+function burgerDispenser(ent) {
+    appendContextItem(`Buy Burger`, true, 'use:BurgerDispenser', {});
+    setContextTitle('Burger Stand');
+}
+
+function fruitDispenser(ent) {
+    alt.emit('store:Food');
+}
+
+function itemDrop(ent) {
+    const currentItem = getItemByEntity(ent);
+    if (!currentItem) return;
+    appendContextItem(`Pickup`, false, 'item:Pickup', {
+        id: currentItem.id,
+        hash: currentItem.data.item.hash
+    });
+    setContextTitle(`${currentItem.data.item.name} x${currentItem.data.item.quantity}`);
+}
+
+function toolBench(ent) {
+    appendContextItem('Crafting Menu', false, 'crafting:ToolsMenu');
+    setContextTitle(`Tool Bench`);
+}
+
+function treeParser(ent) {
+    const alpha = native.getEntityAlpha(ent);
+    if (alpha !== 0) {
+        return;
+    }
+
+    const coordData = getObjectById(ent);
+    if (!coordData) {
+        alt.log('Object does not seem to exist');
+        return;
+    }
+
+    const coords = coordData.coord;
+    const resourceData = getResourceDataByCoord(coords);
+
+    if (!resourceData) {
+        appendContextItem(`Prospect`, true, 'resource:Prospect', {
+            coords: coords,
+            type: 'tree'
+        });
+    }
+
+    if (resourceData && resourceData.amount && resourceData.amount >= 1) {
+        appendContextItem(
+            `Cut Wood | ${resourceData.amount}`,
+            false,
+            'resource:BeginResourceFarming',
+            {
+                coords: coords,
+                type: 'tree',
+                amount: resourceData.amount
+            }
+        );
+    }
+
+    setContextTitle(`Tree`);
+}
+
+function rockParser(ent) {
+    const alpha = native.getEntityAlpha(ent);
+    if (alpha !== 0) {
+        return;
+    }
+
+    const coordData = getObjectById(ent);
+    if (!coordData) {
+        alt.log('Object does not seem to exist');
+        return;
+    }
+
+    const coords = coordData.coord;
+    const resourceData = getResourceDataByCoord(coords);
+
+    if (!resourceData) {
+        appendContextItem(`Prospect`, true, 'resource:Prospect', {
+            coords,
+            type: 'rock'
+        });
+    }
+
+    if (resourceData && resourceData.amount && resourceData.amount >= 1) {
+        appendContextItem(
+            `Mine Rock | ${resourceData.amount}`,
+            false,
+            'resource:BeginResourceFarming',
+            {
+                coords,
+                type: 'rock',
+                amount: resourceData.amount
+            }
+        );
+    }
+
+    setContextTitle(`Rock`);
 }

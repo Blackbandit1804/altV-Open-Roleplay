@@ -10,11 +10,12 @@ export const Account = new orm.EntitySchema({
             type: 'int',
             generated: true
         },
-        username: {
+        userid: {
             type: 'varchar'
         },
-        password: {
-            type: 'varchar'
+        rank: {
+            type: 'int',
+            default: 0
         }
     }
 });
@@ -26,7 +27,11 @@ export const Character = new orm.EntitySchema({
         id: {
             primary: true,
             type: 'int',
-            generated: false
+            generated: true
+        },
+        guid: {
+            type: 'text',
+            default: ''
         },
         name: {
             type: 'text',
@@ -57,7 +62,42 @@ export const Character = new orm.EntitySchema({
             type: 'int',
             default: 0
         },
-        face: {
+        sexgroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        facegroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        structuregroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        hairgroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        eyesgroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        detailgroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        makeupgroup: {
+            type: 'text',
+            nullable: true,
+            default: null
+        },
+        tattoogroup: {
             type: 'text',
             nullable: true,
             default: null
@@ -130,6 +170,58 @@ export const Character = new orm.EntitySchema({
         extraBusinessSlots: {
             type: 'numeric',
             default: 0
+        },
+        dimension: {
+            type: 'int',
+            default: 0
+        },
+        gang: {
+            type: 'int',
+            default: -1
+        }
+    }
+});
+
+export const Gangs = new orm.EntitySchema({
+    name: 'Gangs',
+    columns: {
+        // ID of User who Created Gang
+        id: {
+            primary: true,
+            type: 'int',
+            generated: false
+        },
+        // Creation
+        creation: {
+            type: 'bigint',
+            default: Date.now()
+        },
+        // Name of Gang
+        name: {
+            type: 'text'
+        },
+        // Members
+        members: {
+            type: 'text',
+            default: '[]'
+        },
+        // Ranks
+        ranks: {
+            type: 'text',
+            default: JSON.stringify([
+                'Youngens',
+                'Street Soldiers',
+                'High Council',
+                'Shotcaller'
+            ])
+        },
+        turfs: {
+            type: 'text',
+            default: '[]'
+        },
+        color: {
+            type: 'int',
+            default: 1
         }
     }
 });
@@ -169,6 +261,10 @@ export const Vehicle = new orm.EntitySchema({
         fuel: {
             type: 'decimal',
             default: 100
+        },
+        dimension: {
+            type: 'int',
+            default: 0
         }
     }
 });
@@ -184,6 +280,29 @@ export const Details = new orm.EntitySchema({
         mdc: {
             type: 'text',
             nullable: true
+        }
+    }
+});
+
+export const Door = new orm.EntitySchema({
+    name: 'Door',
+    columns: {
+        id: {
+            primary: true,
+            type: 'int',
+            generated: false
+        },
+        guid: {
+            type: 'int',
+            default: -1
+        },
+        lockstate: {
+            type: 'int',
+            default: 0
+        },
+        salePrice: {
+            type: 'int',
+            default: 100000
         }
     }
 });
