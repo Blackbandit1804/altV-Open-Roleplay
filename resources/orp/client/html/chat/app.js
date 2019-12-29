@@ -45,6 +45,7 @@ class App extends Component {
             this.appendMessage('O:RP Framework');
             this.appendMessage('Hit F1 to toggle help menu.');
             this.appendMessage('Hold TAB to interact with objects by right-clicking.');
+            this.appendMessage('Shift + F7 to Toggle and Untoggle the Chat');
         } else {
             setInterval(() => {
                 this.appendMessage(
@@ -180,8 +181,15 @@ class App extends Component {
     }
 
     setInput(e) {
-        if (!this.state.showingInput) return;
-        if (e.target.value.length > 255) return;
+        if (!this.state.showingInput) {
+            return;
+        }
+
+        if (e.target.value.length > 255) {
+            this.setState({ inputValue: this.state.inputValue });
+            return;
+        }
+
         this.setState({ inputValue: e.target.value });
     }
 
@@ -223,6 +231,10 @@ class App extends Component {
     }
 
     render() {
+        if (this.state.hidden) {
+            return h('div');
+        }
+
         return h(
             'div',
             { class: 'chatbox' },

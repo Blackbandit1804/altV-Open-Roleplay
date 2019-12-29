@@ -118,7 +118,8 @@ const icons = [
     'wheat',
     'wine',
     'wood',
-    'woodcutting'
+    'woodcutting',
+    'dice'
 ];
 
 const slots = [
@@ -144,8 +145,6 @@ const skillDescriptions = {
     cooking: 'Cook raw food like fish at campfires and bbqs.',
     crafting: 'Craft weaponry, better tools, and more at their dedicated locations.',
     mechanic: 'Repair vehicles and gain access to repair kits.',
-    notoriety: 'Be a bad citizen. Traffic refined drugs, and craft weaponry.',
-    nobility: 'Be a good citizen. Sell legal goods, food, and work in civil services.',
     fishing: 'Catch raw fish and rarer fish with a Fishing Rod.',
     smithing: 'Create refined metal for crafting tools.',
     woodcutting: 'Chop wood for unrefined wood and refine that wood.',
@@ -177,8 +176,8 @@ class App extends Component {
 
     componentDidMount() {
         window.addEventListener('keyup', this.close.bind(this));
-
         if ('alt' in window) {
+            alt.emit('inventory:Ready');
             alt.emit('inventory:FetchItems');
         }
     }
@@ -588,7 +587,23 @@ class Inventory extends Component {
                 base: 'Food',
                 quantity: 1,
                 hash: '90840921921',
-                icon: 'leaf'
+                icon: 'leaf',
+                props: {
+                    description: 'This item is a fish taco that you can eat and stuff.',
+                    lvl: {
+                        skill: 'mining',
+                        requirement: 1,
+                        stuff: {
+                            whatever: 'abc',
+                            test: {
+                                test123: 'dlksjf;lksa',
+                                xd: {
+                                    abc: 'dsfkl'
+                                }
+                            }
+                        }
+                    }
+                }
             };
             items[1] = {
                 name: 'Fish Taco That Is Super Delicious',
@@ -713,6 +728,34 @@ class Inventory extends Component {
         this.setState({ inventory: items });
     }
 
+    togglePropertyData(e) {
+        const hash = e.target.id;
+        const value = this.state[hash] ? false : true;
+        this.setState({ [hash]: value });
+    }
+
+    renderPropertyData({ props }) {
+        if (!props) {
+            return h('div', { class: 'objectData' }, 'No Info Available');
+        }
+
+        const keys = Object.keys(props);
+
+        if (keys.length <= 0) {
+            return h('div', { class: 'objectData' }, 'No Info Available');
+        }
+
+        const data = keys.map(key => {
+            if (typeof props[key] === 'object') {
+                return h(this.renderPropertyData.bind(this), { props: props[key] });
+            }
+
+            return h('p', { class: 'objectData' }, `${key}: ${props[key]}`);
+        });
+
+        return h('div', { class: 'objectContainer' }, data);
+    }
+
     renderItem({ item, index, itemCount }) {
         if (!item) return;
         if (this.state.search.length >= 2) {
@@ -724,68 +767,106 @@ class Inventory extends Component {
             icon = icons.includes(item.icon) ? item.icon : 'unknown';
         }
 
+        const isExpanded = this.state[item.hash] ? true : false;
+
         return h(
             'div',
             { class: 'item' },
             h(
                 'div',
-                { class: 'icon' },
-                h('svg', {
-                    type: 'image/svg+xml',
-                    style: `background: url('../icons/${icon}.svg');`
-                })
-            ),
-            h('div', { class: 'item-name' }, `${item.quantity}x - ${item.name}`),
-            h(
-                'div',
-                { class: 'buttons' },
+                { class: 'itemHeader' },
+                isExpanded &&
+                    h(
+                        'button',
+                        {
+                            class: 'toggleable',
+                            id: item.hash,
+                            onclick: this.togglePropertyData.bind(this)
+                        },
+                        '-'
+                    ),
+                !isExpanded &&
+                    h(
+                        'button',
+                        {
+                            class: 'toggleable',
+                            id: item.hash,
+                            onclick: this.togglePropertyData.bind(this)
+                        },
+                        '+'
+                    ),
                 h(
-                    'button',
-                    { class: 'item-button', id: index, onclick: this.useItem.bind(this) },
-                    'Use'
+                    'div',
+                    { class: 'icon' },
+                    h('svg', {
+                        type: 'image/svg+xml',
+                        style: `background: url('../icons/${icon}.svg');`
+                    })
                 ),
+                h('div', { class: 'item-name' }, `${item.quantity}x - ${item.name}`),
                 h(
-                    'button',
-                    {
-                        class: 'item-button',
-                        id: index,
-                        onclick: this.dropItem.bind(this)
-                    },
-                    'Drop'
-                ),
-                h(
-                    'button',
-                    {
-                        class: 'item-button',
-                        id: index,
-                        onclick: this.destroyItem.bind(this)
-                    },
-                    'Destroy'
-                ),
-                item.quantity >= 2 &&
-                    itemCount <= 27 &&
+                    'div',
+                    { class: 'buttons' },
                     h(
                         'button',
                         {
                             class: 'item-button',
                             id: index,
-                            onclick: this.splitItem.bind(this)
+                            onclick: this.useItem.bind(this)
                         },
-                        'Split'
+                        'Use'
                     ),
-                item.quantity >= 2 &&
-                    itemCount >= 28 &&
                     h(
                         'button',
                         {
-                            class: 'item-button disabled',
-                            id: index
+                            class: 'item-button',
+                            id: index,
+                            onclick: this.dropItem.bind(this)
                         },
-                        'Split'
+                        'Drop'
                     ),
-                item.quantity <= 1 &&
-                    h('button', { class: 'item-button disabled', id: index }, 'Split')
-            )
+                    h(
+                        'button',
+                        {
+                            class: 'item-button',
+                            id: index,
+                            onclick: this.destroyItem.bind(this)
+                        },
+                        'Destroy'
+                    ),
+                    item.quantity >= 2 &&
+                        itemCount <= 27 &&
+                        h(
+                            'button',
+                            {
+                                class: 'item-button',
+                                id: index,
+                                onclick: this.splitItem.bind(this)
+                            },
+                            'Split'
+                        ),
+                    item.quantity >= 2 &&
+                        itemCount >= 28 &&
+                        h(
+                            'button',
+                            {
+                                class: 'item-button disabled',
+                                id: index
+                            },
+                            'Split'
+                        ),
+                    item.quantity <= 1 &&
+                        h('button', { class: 'item-button disabled', id: index }, 'Split')
+                )
+            ),
+            isExpanded &&
+                h(
+                    'div',
+                    { class: 'itemBody' },
+                    h(this.renderPropertyData.bind(this), {
+                        props: item.props
+                    })
+                )
         );
     }
 
@@ -858,8 +939,6 @@ class Stats extends Component {
             this.addStat('cooking', 25, 859215);
             this.addStat('crafting', 25, 459215);
             this.addStat('mechanic', 25, 555215);
-            this.addStat('notoriety', 25, 859215);
-            this.addStat('nobility', 25, 852215);
             this.addStat('fishing', 25, 859215);
             this.addStat('smithing', 25, 651215);
             this.addStat('woodcutting', 25, 859215);
